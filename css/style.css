@@ -1,0 +1,408 @@
+:root {
+  --bg: #1b1f27;
+  --panel-bg: #232833;
+  --panel-border: #333a48;
+  --text: #e9edf5;
+  --text-dim: #a3acbf;
+  --accent: #e0a030;
+  --accent-dim: #a3762a;
+  --board-frame: #4a2f22;
+  --board-felt: #0f4a3c;
+  --point-a: #d9b98a;
+  --point-b: #6b3f2a;
+  --white-checker: #f4f0e6;
+  --white-checker-edge: #b8b2a0;
+  --black-checker: #2a2a2e;
+  --black-checker-edge: #000;
+  --danger: #d9534f;
+  --ok: #4caf7d;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--panel-border);
+  gap: 0.5rem;
+}
+.topbar h1 { font-size: 1.15rem; margin: 0; letter-spacing: 0.02em; white-space: nowrap; }
+.topbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+
+.btn {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 0.5rem 0.9rem;
+  min-height: 44px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  touch-action: manipulation;
+  transition: background 0.15s, transform 0.05s;
+}
+.btn:hover:not(:disabled) { background: #2c3342; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost { background: transparent; }
+.btn-primary { background: var(--accent-dim); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn-primary:hover:not(:disabled) { background: var(--accent); }
+.btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
+
+#app {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem;
+  min-width: 0;
+}
+.hidden { display: none !important; }
+
+.screen { flex: 1 1 auto; min-height: 0; }
+
+/* Start screen */
+.screen.start-screen, #start-screen { display: flex; justify-content: center; align-items: center; padding: 1rem; overflow-y: auto; }
+.start-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+.start-card h2 { margin-top: 0; }
+.mode-options { display: flex; gap: 1rem; margin: 1.25rem 0; flex-wrap: wrap; }
+.mode-btn {
+  flex: 1 1 180px;
+  background: #1a1e27;
+  border: 2px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+}
+.mode-btn:hover { border-color: var(--accent-dim); }
+.mode-btn.selected { border-color: var(--accent); background: #2a2417; }
+.mode-title { font-weight: 700; font-size: 1.05rem; }
+.mode-desc { font-size: 0.82rem; color: var(--text-dim); }
+.difficulty-row { display: flex; align-items: center; gap: 0.9rem; justify-content: center; margin-bottom: 1.25rem; font-size: 0.9rem; flex-wrap: wrap; }
+
+/* Game layout */
+#game-screen { display: flex; flex-direction: column; }
+.game-layout { flex: 1 1 auto; min-height: 0; display: flex; gap: 0.75rem; }
+.board-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+.side-panel {
+  /* Scales with viewport width but stays narrow so the board — the point of a
+     landscape/horizontal tablet layout — gets the majority of the screen. */
+  flex: 0 0 clamp(200px, 21vw, 280px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
+}
+
+.panel-block {
+  flex: 0 0 auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+}
+.panel-block h3 { margin: 0 0 0.4rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+#turn-text { font-size: 1.05rem; font-weight: 700; }
+#turn-text.white-turn { color: var(--white-checker); }
+#turn-text.black-turn { color: #cfd3dc; }
+
+.dice-display { display: flex; gap: 0.4rem; min-height: 38px; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+.die {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: #fff; color: #111; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.05rem; box-shadow: inset 0 0 0 2px #ccc; flex-shrink: 0;
+}
+.die.used { opacity: 0.3; text-decoration: line-through; }
+
+.actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.actions-row .btn { flex: 1 1 auto; }
+
+.speed-select {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0.5rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.score-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.score-table td { padding: 0.2rem 0.2rem; }
+
+/* This panel block is the one allowed to shrink/scroll internally so the essential
+   turn/dice/action/score blocks above it always stay fully visible on short screens. */
+.panel-block.log-block { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.message-log { font-size: 0.8rem; color: var(--text-dim); flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }
+.message-log .msg-illegal { color: var(--danger); }
+.message-log .msg-info { color: var(--text-dim); }
+.message-log .msg-good { color: var(--ok); }
+
+/* Board */
+.board {
+  position: relative;
+  /* Fill whichever dimension of .board-wrap is the limiting one, keeping the
+     board's natural 15:10 ratio — i.e. "object-fit: contain" for a non-replaced box. */
+  width: min(100%, 100cqh * 1.5);
+  aspect-ratio: 15 / 10;
+  background: var(--board-frame);
+  border-radius: 10px;
+  padding: 1.4%;
+  user-select: none;
+}
+/* Fallback for browsers without container query units: at least fill available width. */
+@supports not (width: 100cqh) {
+  .board { width: 100%; max-height: 100%; }
+}
+.board-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--board-felt);
+  border-radius: 4px;
+}
+.point {
+  position: absolute;
+  width: calc(100% / 14);
+  height: 45%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.point.row-top { top: 0; flex-direction: column; }
+.point.row-bottom { bottom: 0; flex-direction: column-reverse; }
+
+.point-triangle {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  z-index: 0;
+}
+.point.row-bottom .point-triangle { clip-path: polygon(0 100%, 100% 100%, 50% 0); }
+.point.color-a .point-triangle { background: var(--point-a); }
+.point.color-b .point-triangle { background: var(--point-b); }
+
+.point-number {
+  position: absolute;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.55);
+  z-index: 1;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.point.row-top .point-number { top: 2px; }
+.point.row-bottom .point-number { bottom: 2px; }
+
+.checker-stack {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: inherit;
+  align-items: center;
+  width: 100%;
+  padding: 3% 0;
+}
+.point.row-top .checker-stack { padding-top: 16px; }
+.point.row-bottom .checker-stack { padding-bottom: 16px; }
+.checker {
+  width: 84%;
+  max-width: 40px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  margin-top: -22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+}
+.point.row-bottom .checker { margin-top: 0; margin-bottom: -22%; }
+.checker-stack > .checker:first-child { margin: 0; }
+.checker.white { background: radial-gradient(circle at 35% 30%, #fff, var(--white-checker)); border: 1px solid var(--white-checker-edge); color: #333; }
+.checker.black { background: radial-gradient(circle at 35% 30%, #4a4a4e, var(--black-checker)); border: 1px solid var(--black-checker-edge); color: #eee; }
+
+.point.selectable > .point-triangle { filter: brightness(1.25); }
+.point.legal-target { cursor: pointer; }
+.point.legal-target::after {
+  content: "";
+  position: absolute;
+  top: 42%; left: 50%; transform: translate(-50%, -50%);
+  width: 22%; height: 22%; max-width: 26px; max-height: 26px;
+  border-radius: 50%;
+  background: rgba(224, 160, 48, 0.85);
+  z-index: 3;
+  box-shadow: 0 0 0 3px rgba(224,160,48,0.25);
+}
+.point.selected-source > .point-triangle { filter: brightness(1.5); }
+
+.bar {
+  position: absolute;
+  top: 0; height: 100%;
+  width: calc(100% / 14);
+  left: calc(100% / 14 * 6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.25);
+  z-index: 2;
+}
+.bar-half { display: flex; flex-direction: column; align-items: center; padding: 4% 0; gap: 4%; flex: 1; justify-content: flex-start; }
+.bar-half.bottom { justify-content: flex-end; }
+.bar-half.clickable { cursor: pointer; }
+.bar-half.selectable { outline: 2px dashed var(--accent); outline-offset: -4px; border-radius: 6px; }
+.bar .checker { width: 70%; max-width: 34px; margin: 0 !important; }
+
+.off-tray {
+  position: absolute;
+  top: 0; height: 100%;
+  width: calc(100% / 14);
+  left: calc(100% / 14 * 13);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  z-index: 2;
+  border-radius: 0 4px 4px 0;
+}
+.off-half { display: flex; flex-direction: column-reverse; align-items: center; gap: 2px; padding: 3% 2px; flex: 1; overflow: hidden; }
+.off-half.top { flex-direction: column; }
+.off-half.clickable { cursor: pointer; }
+.off-half.selectable { outline: 2px dashed var(--accent); outline-offset: -4px; border-radius: 6px; }
+.off-checker { width: 60%; max-width: 22px; aspect-ratio: 1/1; border-radius: 50%; }
+.off-checker.white { background: var(--white-checker); border: 1px solid var(--white-checker-edge); }
+.off-checker.black { background: var(--black-checker); border: 1px solid var(--black-checker-edge); }
+.off-count { font-size: 0.7rem; color: var(--text-dim); }
+
+.stack-overflow-label {
+  position: absolute;
+  z-index: 4;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #222;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  width: 60%;
+  max-width: 30px;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--danger);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  max-width: 90vw;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  z-index: 50;
+  font-size: 0.92rem;
+}
+.toast.info { background: #35507a; }
+
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+.modal {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+.modal-large { max-width: 720px; max-height: 85vh; overflow-y: auto; text-align: left; }
+.modal-close {
+  position: absolute; top: 0.75rem; right: 0.9rem;
+  background: none; border: none; color: var(--text-dim);
+  font-size: 1.6rem; cursor: pointer; line-height: 1;
+}
+.rules-content h3 { color: var(--accent); margin-top: 1.2rem; }
+.rules-content p, .rules-content li { color: var(--text-dim); line-height: 1.5; }
+
+/* Tablet turned to portrait (or any narrow window): stack the board above a compact
+   control strip so every action stays reachable without scrolling the page. Only the
+   message log (non-essential) is allowed to shrink or scroll internally.
+   Tablet turned to landscape (the common default above) keeps the board and side
+   panel side by side, so the board — a fixed 15:10 horizontal shape — gets the
+   majority of the screen, growing as the device is rotated wider. */
+@media (orientation: portrait), (max-width: 700px) {
+  #app { padding: 0.5rem; }
+  .game-layout { flex-direction: column; gap: 0.5rem; }
+  .board-wrap { flex: 1 1 auto; }
+  .side-panel {
+    flex: 0 0 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: 42vh;
+    overflow-y: auto;
+    gap: 0.5rem;
+  }
+  .side-panel .panel-block { flex: 1 1 150px; }
+  .side-panel .panel-block.log-block { flex: 1 1 100%; max-height: 110px; }
+}
+
+@media (orientation: portrait) and (max-width: 480px), (max-width: 380px) {
+  .side-panel .panel-block { flex: 1 1 100%; }
+}

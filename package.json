@@ -1,0 +1,11 @@
+{
+  "name": "backgammon-webapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone backgammon webapp - 2 spillere eller mod computeren",
+  "scripts": {
+    "test": "node --test test/",
+    "start": "python3 -m http.server 8080"
+  },
+  "license": "MIT"
+}

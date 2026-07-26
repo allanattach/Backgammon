@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Backgammon</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%234a2f22'/%3E%3Ccircle cx='35' cy='50' r='22' fill='%23f4f0e6'/%3E%3Ccircle cx='65' cy='50' r='22' fill='%232a2a2e'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%234a2f22'/%3E%3Ccircle cx='35' cy='50' r='22' fill='%23f4f0e6'/%3E%3Ccircle cx='65' cy='50' r='22' fill='%232a2a2e'/%3E%3C/svg%3E" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1b1f27" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Backgammon" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Backgammon</h1>
+    <div class="topbar-actions">
+      <button id="btn-rules" class="btn btn-ghost" type="button">Reglerne</button>
+      <button id="btn-new-game" class="btn btn-ghost" type="button">Nyt spil</button>
+      <button id="btn-fullscreen" class="btn btn-ghost btn-icon" type="button" aria-label="Fuld skærm" title="Fuld skærm">⛶</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- Start / mode selection screen -->
+    <section id="start-screen" class="screen">
+      <div class="start-card">
+        <h2>Velkommen til Backgammon</h2>
+        <p>Vælg hvordan du vil spille:</p>
+        <div class="mode-options">
+          <button class="mode-btn" data-mode="pvp" type="button">
+            <span class="mode-title">2 spillere</span>
+            <span class="mode-desc">Spil mod hinanden på samme skærm</span>
+          </button>
+          <button class="mode-btn" data-mode="pvc" type="button">
+            <span class="mode-title">Mod computeren</span>
+            <span class="mode-desc">Spil som hvid mod en computermodstander</span>
+          </button>
+        </div>
+        <div id="difficulty-row" class="difficulty-row hidden">
+          <span>Sværhedsgrad:</span>
+          <label><input type="radio" name="difficulty" value="easy" /> Let</label>
+          <label><input type="radio" name="difficulty" value="normal" checked /> Normal</label>
+        </div>
+        <div id="speed-row" class="difficulty-row hidden">
+          <span>Tempo for computerens træk:</span>
+          <label><input type="radio" name="speed" value="slow" /> Langsom</label>
+          <label><input type="radio" name="speed" value="normal" checked /> Normal</label>
+          <label><input type="radio" name="speed" value="fast" /> Hurtig</label>
+        </div>
+        <button id="btn-start" class="btn btn-primary" type="button" disabled>Start spil</button>
+      </div>
+    </section>
+
+    <!-- Game screen -->
+    <section id="game-screen" class="screen hidden">
+      <div class="game-layout">
+        <div class="board-wrap">
+          <div id="board" class="board" aria-label="Backgammon-bræt"></div>
+        </div>
+        <aside class="side-panel">
+          <div class="panel-block" id="turn-indicator">
+            <h3>Tur</h3>
+            <div id="turn-text">-</div>
+          </div>
+          <div class="panel-block" id="dice-block">
+            <h3>Terninger</h3>
+            <div id="dice-display" class="dice-display"></div>
+            <button id="btn-roll" class="btn btn-primary" type="button">Slå terninger</button>
+          </div>
+          <div class="panel-block">
+            <h3>Handlinger</h3>
+            <div class="actions-row">
+              <button id="btn-undo" class="btn" type="button" disabled>Fortryd træk</button>
+              <button id="btn-end-turn" class="btn" type="button" disabled>Afslut tur</button>
+            </div>
+            <select id="live-speed-select" class="speed-select hidden" title="Computerens tempo" aria-label="Computerens tempo">
+              <option value="slow">Tempo: Langsom</option>
+              <option value="normal" selected>Tempo: Normal</option>
+              <option value="fast">Tempo: Hurtig</option>
+            </select>
+          </div>
+          <div class="panel-block">
+            <h3>Stilling</h3>
+            <table class="score-table">
+              <tbody>
+                <tr><td>Hvid</td><td id="score-white">0</td><td id="pip-white">-</td></tr>
+                <tr><td>Sort</td><td id="score-black">0</td><td id="pip-black">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel-block log-block">
+            <h3>Beskeder</h3>
+            <div id="message-log" class="message-log" aria-live="polite"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <!-- Illegal-move toast -->
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <!-- Win dialog -->
+  <div id="win-dialog" class="modal-overlay hidden">
+    <div class="modal">
+      <h2 id="win-title">Spillet er slut</h2>
+      <p id="win-detail"></p>
+      <button id="btn-play-again" class="btn btn-primary" type="button">Spil igen</button>
+    </div>
+  </div>
+
+  <!-- Rules modal -->
+  <div id="rules-modal" class="modal-overlay hidden">
+    <div class="modal modal-large">
+      <button class="modal-close" id="btn-close-rules" type="button" aria-label="Luk">&times;</button>
+      <h2>Backgammon – officielle regler</h2>
+      <div id="rules-content" class="rules-content"></div>
+    </div>
+  </div>
+
+  <script src="js/rules-engine.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/rules-text.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
