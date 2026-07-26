@@ -68,6 +68,21 @@ body {
 .btn-primary:hover:not(:disabled) { background: var(--accent); }
 .btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
 
+/* Roll-dice button is tinted to match whichever colour is on move, so in 2-player mode
+   it's immediately obvious whose turn it is without reading the text label. */
+#btn-roll.turn-white {
+  background: var(--white-checker);
+  border-color: var(--white-checker-edge);
+  color: #2a2a2e;
+}
+#btn-roll.turn-white:hover:not(:disabled) { background: #fff; }
+#btn-roll.turn-black {
+  background: var(--black-checker);
+  border-color: #000;
+  color: var(--white-checker);
+}
+#btn-roll.turn-black:hover:not(:disabled) { background: #3a3a3e; }
+
 #app {
   flex: 1 1 auto;
   min-height: 0;

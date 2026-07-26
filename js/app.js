@@ -642,6 +642,8 @@
 
     turnText.textContent = `${PLAYER_LABEL[state.turn]}${mode === 'pvc' && state.turn !== humanPlayer ? ' (computer)' : ''}`;
     turnText.className = state.turn === 'white' ? 'white-turn' : 'black-turn';
+    btnRoll.classList.remove('turn-white', 'turn-black');
+    btnRoll.classList.add(state.turn === 'white' ? 'turn-white' : 'turn-black');
 
     diceDisplay.innerHTML = '';
     if (state.originalRoll.length) {
