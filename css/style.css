@@ -160,6 +160,20 @@ body {
 
 .actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .actions-row .btn { flex: 1 1 auto; }
+
+.speed-select {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0.5rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
 .score-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .score-table td { padding: 0.2rem 0.2rem; }
 

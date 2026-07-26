@@ -25,6 +25,8 @@
   const winDetail = document.getElementById('win-detail');
   const rulesModal = document.getElementById('rules-modal');
   const rulesContent = document.getElementById('rules-content');
+  const speedRow = document.getElementById('speed-row');
+  const liveSpeedSelect = document.getElementById('live-speed-select');
 
   rulesContent.innerHTML = window.BgRulesText;
 
@@ -37,6 +39,41 @@
   let undoStack = [];
   let awaitingHumanInput = false;
   let scoreboard = loadScoreboard();
+
+  // How fast the computer's moves play out, so the moves stay watchable instead of
+  // flashing by. All timings are in milliseconds.
+  const SPEED_PRESETS = {
+    slow: { beforeAiTurn: 1000, betweenMoves: 1300, afterSequence: 900, beforeAiRoll: 900 },
+    normal: { beforeAiTurn: 550, betweenMoves: 450, afterSequence: 500, beforeAiRoll: 500 },
+    fast: { beforeAiTurn: 150, betweenMoves: 130, afterSequence: 150, beforeAiRoll: 150 },
+  };
+  let aiSpeed = loadSpeed();
+
+  function loadSpeed() {
+    try {
+      const v = localStorage.getItem('bg_ai_speed');
+      if (v && SPEED_PRESETS[v]) return v;
+    } catch (e) { /* ignore */ }
+    return 'normal';
+  }
+  function saveSpeed() {
+    try { localStorage.setItem('bg_ai_speed', aiSpeed); } catch (e) { /* ignore */ }
+  }
+  function speedTimings() { return SPEED_PRESETS[aiSpeed]; }
+
+  function syncSpeedControls() {
+    document.querySelectorAll('input[name="speed"]').forEach((r) => { r.checked = r.value === aiSpeed; });
+    liveSpeedSelect.value = aiSpeed;
+  }
+  syncSpeedControls();
+
+  document.querySelectorAll('input[name="speed"]').forEach((r) => {
+    r.addEventListener('change', () => { aiSpeed = r.value; saveSpeed(); });
+  });
+  liveSpeedSelect.addEventListener('change', () => {
+    aiSpeed = liveSpeedSelect.value;
+    saveSpeed();
+  });
 
   function loadScoreboard() {
     try {
@@ -72,6 +109,7 @@
       btn.classList.add('selected');
       mode = btn.dataset.mode;
       document.getElementById('difficulty-row').classList.toggle('hidden', mode !== 'pvc');
+      speedRow.classList.toggle('hidden', mode !== 'pvc');
       document.getElementById('btn-start').disabled = false;
     });
   });
@@ -80,7 +118,12 @@
     if (mode === 'pvc') {
       const sel = document.querySelector('input[name="difficulty"]:checked');
       difficulty = sel ? sel.value : 'normal';
+      const speedSel = document.querySelector('input[name="speed"]:checked');
+      aiSpeed = speedSel ? speedSel.value : aiSpeed;
+      saveSpeed();
     }
+    liveSpeedSelect.classList.toggle('hidden', mode !== 'pvc');
+    syncSpeedControls();
     startScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     beginNewGame();
@@ -175,7 +218,7 @@
       renderAll();
     } else {
       renderAll();
-      setTimeout(aiTakeTurn, 550);
+      setTimeout(aiTakeTurn, speedTimings().beforeAiTurn);
     }
   }
 
@@ -183,7 +226,7 @@
     const legal = R.getLegalMoves(state);
     if (legal.length === 0) {
       log(`${PLAYER_LABEL[state.turn]} (computer) har ingen lovlige træk med ${state.dice.join(', ')} og springer over.`, 'info');
-      setTimeout(endTurn, 700);
+      setTimeout(endTurn, speedTimings().afterSequence);
       return;
     }
     const seq = AI.chooseSequence(state, difficulty);
@@ -194,7 +237,7 @@
   function playSequenceStepwise(moves, i) {
     if (i >= moves.length) {
       if (state.winner) { showWin(); return; }
-      setTimeout(endTurn, 500);
+      setTimeout(endTurn, speedTimings().afterSequence);
       return;
     }
     const mv = moves[i];
@@ -202,7 +245,7 @@
     describeMove(mv, state.turn);
     renderAll();
     if (state.winner) { showWin(); return; }
-    setTimeout(() => playSequenceStepwise(moves, i + 1), 450);
+    setTimeout(() => playSequenceStepwise(moves, i + 1), speedTimings().betweenMoves);
   }
 
   function describeMove(mv, player) {
@@ -224,7 +267,7 @@
     renderAll();
     if (!isHumanTurn()) {
       // AI rolls automatically.
-      setTimeout(rollForAI, 500);
+      setTimeout(rollForAI, speedTimings().beforeAiRoll);
     }
   }
 
