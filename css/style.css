@@ -21,31 +21,43 @@
 
 * { box-sizing: border-box; }
 
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .topbar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--panel-border);
+  gap: 0.5rem;
 }
-.topbar h1 { font-size: 1.25rem; margin: 0; letter-spacing: 0.02em; }
-.topbar-actions { display: flex; gap: 0.5rem; }
+.topbar h1 { font-size: 1.15rem; margin: 0; letter-spacing: 0.02em; white-space: nowrap; }
+.topbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
 
 .btn {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   color: var(--text);
   padding: 0.5rem 0.9rem;
+  min-height: 44px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
+  touch-action: manipulation;
   transition: background 0.15s, transform 0.05s;
 }
 .btn:hover:not(:disabled) { background: #2c3342; }
@@ -54,12 +66,25 @@ body {
 .btn-ghost { background: transparent; }
 .btn-primary { background: var(--accent-dim); border-color: var(--accent); color: #fff; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: var(--accent); }
+.btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
 
-#app { padding: 1rem; max-width: 1400px; margin: 0 auto; }
+#app {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem;
+  min-width: 0;
+}
 .hidden { display: none !important; }
 
+.screen { flex: 1 1 auto; min-height: 0; }
+
 /* Start screen */
-.screen.start-screen, #start-screen { display: flex; justify-content: center; padding: 2.5rem 1rem; }
+.screen.start-screen, #start-screen { display: flex; justify-content: center; align-items: center; padding: 1rem; overflow-y: auto; }
 .start-card {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
@@ -91,33 +116,55 @@ body {
 .difficulty-row { display: flex; align-items: center; gap: 0.9rem; justify-content: center; margin-bottom: 1.25rem; font-size: 0.9rem; flex-wrap: wrap; }
 
 /* Game layout */
-.game-layout { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
-.board-wrap { flex: 1 1 640px; min-width: 320px; }
-.side-panel { flex: 0 0 280px; display: flex; flex-direction: column; gap: 0.75rem; min-width: 240px; }
+#game-screen { display: flex; flex-direction: column; }
+.game-layout { flex: 1 1 auto; min-height: 0; display: flex; gap: 0.75rem; }
+.board-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+.side-panel {
+  flex: 0 0 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
+}
 
 .panel-block {
+  flex: 0 0 auto;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
-  padding: 0.75rem 0.9rem;
+  padding: 0.6rem 0.8rem;
 }
-.panel-block h3 { margin: 0 0 0.5rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
-#turn-text { font-size: 1.1rem; font-weight: 700; }
+.panel-block h3 { margin: 0 0 0.4rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+#turn-text { font-size: 1.05rem; font-weight: 700; }
 #turn-text.white-turn { color: var(--white-checker); }
 #turn-text.black-turn { color: #cfd3dc; }
 
-.dice-display { display: flex; gap: 0.5rem; min-height: 44px; align-items: center; margin-bottom: 0.6rem; }
+.dice-display { display: flex; gap: 0.4rem; min-height: 38px; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
 .die {
-  width: 38px; height: 38px; border-radius: 8px;
+  width: 34px; height: 34px; border-radius: 8px;
   background: #fff; color: #111; display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 1.15rem; box-shadow: inset 0 0 0 2px #ccc;
+  font-weight: 800; font-size: 1.05rem; box-shadow: inset 0 0 0 2px #ccc; flex-shrink: 0;
 }
 .die.used { opacity: 0.3; text-decoration: line-through; }
 
 .actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.score-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.score-table td { padding: 0.25rem 0.2rem; }
-.message-log { font-size: 0.82rem; color: var(--text-dim); max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }
+.actions-row .btn { flex: 1 1 auto; }
+.score-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.score-table td { padding: 0.2rem 0.2rem; }
+
+/* This panel block is the one allowed to shrink/scroll internally so the essential
+   turn/dice/action/score blocks above it always stay fully visible on short screens. */
+.panel-block.log-block { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.message-log { font-size: 0.8rem; color: var(--text-dim); flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }
 .message-log .msg-illegal { color: var(--danger); }
 .message-log .msg-info { color: var(--text-dim); }
 .message-log .msg-good { color: var(--ok); }
@@ -125,12 +172,18 @@ body {
 /* Board */
 .board {
   position: relative;
-  width: 100%;
+  /* Fill whichever dimension of .board-wrap is the limiting one, keeping the
+     board's natural 15:10 ratio — i.e. "object-fit: contain" for a non-replaced box. */
+  width: min(100%, 100cqh * 1.5);
   aspect-ratio: 15 / 10;
   background: var(--board-frame);
   border-radius: 10px;
   padding: 1.4%;
   user-select: none;
+}
+/* Fallback for browsers without container query units: at least fill available width. */
+@supports not (width: 100cqh) {
+  .board { width: 100%; max-height: 100%; }
 }
 .board-inner {
   position: relative;
@@ -312,7 +365,25 @@ body {
 .rules-content h3 { color: var(--accent); margin-top: 1.2rem; }
 .rules-content p, .rules-content li { color: var(--text-dim); line-height: 1.5; }
 
-@media (max-width: 720px) {
-  .game-layout { flex-direction: column; }
-  .side-panel { width: 100%; flex: 1 1 auto; }
+/* Tablet portrait / narrow window: stack the board above a compact control strip so
+   every action stays reachable without scrolling the page. Only the message log
+   (non-essential) is allowed to shrink or scroll internally. */
+@media (max-width: 900px) {
+  #app { padding: 0.5rem; }
+  .game-layout { flex-direction: column; gap: 0.5rem; }
+  .board-wrap { flex: 1 1 auto; }
+  .side-panel {
+    flex: 0 0 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: 42vh;
+    overflow-y: auto;
+    gap: 0.5rem;
+  }
+  .side-panel .panel-block { flex: 1 1 150px; }
+  .side-panel .panel-block.log-block { flex: 1 1 100%; max-height: 110px; }
+}
+
+@media (max-width: 480px) {
+  .side-panel .panel-block { flex: 1 1 100%; }
 }

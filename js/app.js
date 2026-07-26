@@ -91,6 +91,32 @@
     startScreen.classList.remove('hidden');
   });
 
+  // ---- Fullscreen (for tablet play) ----
+  const btnFullscreen = document.getElementById('btn-fullscreen');
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function updateFullscreenButton() {
+    btnFullscreen.textContent = isFullscreen() ? '⤡' : '⛶';
+    btnFullscreen.title = isFullscreen() ? 'Afslut fuld skærm' : 'Fuld skærm';
+  }
+  btnFullscreen.addEventListener('click', () => {
+    const el = document.documentElement;
+    if (!isFullscreen()) {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) {
+        req.call(el).catch(() => showToast('Fuld skærm blev ikke understøttet af browseren.', 'info'));
+      } else {
+        showToast('Fuld skærm understøttes ikke i denne browser.', 'info');
+      }
+    } else {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    }
+  });
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+
   document.getElementById('btn-rules').addEventListener('click', () => rulesModal.classList.remove('hidden'));
   document.getElementById('btn-close-rules').addEventListener('click', () => rulesModal.classList.add('hidden'));
   rulesModal.addEventListener('click', (e) => { if (e.target === rulesModal) rulesModal.classList.add('hidden'); });
