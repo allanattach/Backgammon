@@ -31,6 +31,7 @@
   const liveSpeedRow = document.getElementById('live-speed-row');
   const liveSpeedSlider = document.getElementById('live-speed-slider');
   const liveSpeedLabel = document.getElementById('live-speed-label');
+  const autoEndTurnToggle = document.getElementById('auto-end-turn-toggle');
 
   rulesContent.innerHTML = window.BgRulesText;
 
@@ -50,7 +51,7 @@
   const SPEED_ORDER = ['slow', 'normal', 'fast'];
   const SPEED_LABELS = { slow: 'Langsom', normal: 'Normal', fast: 'Hurtig' };
   const SPEED_PRESETS = {
-    slow: { beforeAiTurn: 1000, betweenMoves: 1300, afterSequence: 900, beforeAiRoll: 900 },
+    slow: { beforeAiTurn: 1800, betweenMoves: 2600, afterSequence: 1800, beforeAiRoll: 1800 },
     normal: { beforeAiTurn: 550, betweenMoves: 450, afterSequence: 500, beforeAiRoll: 500 },
     fast: { beforeAiTurn: 150, betweenMoves: 130, afterSequence: 150, beforeAiRoll: 150 },
   };
@@ -86,6 +87,45 @@
   // in-game) stay in sync live and the setting takes effect immediately.
   speedSlider.addEventListener('input', () => setSpeedFromSlider(speedSlider));
   liveSpeedSlider.addEventListener('input', () => setSpeedFromSlider(liveSpeedSlider));
+
+  // ---- Auto-end-turn: optionally end a human turn automatically once no dice/moves
+  // remain, instead of requiring a manual "Afslut tur" click. ----
+  let autoEndTurn = loadAutoEndTurn();
+  let pendingAutoEndTimer = null;
+
+  function loadAutoEndTurn() {
+    try { return localStorage.getItem('bg_auto_end_turn') === '1'; } catch (e) { return false; }
+  }
+  function saveAutoEndTurn() {
+    try { localStorage.setItem('bg_auto_end_turn', autoEndTurn ? '1' : '0'); } catch (e) { /* ignore */ }
+  }
+  autoEndTurnToggle.checked = autoEndTurn;
+  autoEndTurnToggle.addEventListener('change', () => {
+    autoEndTurn = autoEndTurnToggle.checked;
+    saveAutoEndTurn();
+  });
+
+  function cancelPendingAutoEnd() {
+    if (pendingAutoEndTimer !== null) {
+      clearTimeout(pendingAutoEndTimer);
+      pendingAutoEndTimer = null;
+    }
+  }
+
+  /** Call once a human turn has no more legal moves: either waits for a manual click
+   * on "Afslut tur"/"Fortsæt", or - if the auto-end toggle is on - ends it automatically
+   * after a short pause (so the player still sees the final position/animation). */
+  function offerOrAutoEndTurn(label) {
+    btnEndTurn.disabled = false;
+    btnEndTurn.textContent = label;
+    if (autoEndTurn) {
+      cancelPendingAutoEnd();
+      pendingAutoEndTimer = setTimeout(() => {
+        pendingAutoEndTimer = null;
+        endTurn();
+      }, speedTimings().afterSequence);
+    }
+  }
 
   function loadScoreboard() {
     try {
@@ -126,7 +166,7 @@
   function moveAnimationDuration() {
     // Scales with the AI speed setting so an animation never outlasts the gap before
     // the next move starts (otherwise a fast AI turn would visibly cut moves short).
-    return Math.max(120, Math.min(400, speedTimings().betweenMoves * 0.7));
+    return Math.max(120, Math.min(1100, speedTimings().betweenMoves * 0.7));
   }
 
   const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -252,6 +292,7 @@
 
   // ---- Game lifecycle ----
   function beginNewGame() {
+    cancelPendingAutoEnd();
     messageLog.innerHTML = '';
     undoStack = [];
     selectedSource = null;
@@ -286,8 +327,7 @@
       if (legal.length === 0) {
         log(`${PLAYER_LABEL[state.turn]} har ingen lovlige træk med ${state.dice.join(', ') || 'terningerne'} og springer over.`, 'illegal');
         awaitingHumanInput = false;
-        btnEndTurn.disabled = false;
-        btnEndTurn.textContent = 'Fortsæt';
+        offerOrAutoEndTurn('Fortsæt');
       }
       renderAll();
     } else {
@@ -333,6 +373,7 @@
   }
 
   function endTurn() {
+    cancelPendingAutoEnd();
     selectedSource = null;
     const next = opponentOf(state.turn);
     state = { ...R.cloneState(state), turn: next, dice: [], originalRoll: [], movesPlayedThisTurn: 0, history: [] };
@@ -366,9 +407,14 @@
 
   btnUndo.addEventListener('click', () => {
     if (undoStack.length === 0) return;
+    cancelPendingAutoEnd();
     state = undoStack.pop();
     selectedSource = null;
     log('Sidste træk fortrudt.', 'info');
+    // Undo only ever pops a state from within the current human turn, which by
+    // definition still has the undone move (or another) available - restore board
+    // interactivity, which the "no more moves" path had turned off.
+    awaitingHumanInput = true;
     updateUndoEndButtons();
     renderAll();
   });
@@ -481,11 +527,10 @@
       const stillLegal = R.getLegalMoves(state);
       if (state.dice.length === 0 || stillLegal.length === 0) {
         awaitingHumanInput = false;
-        btnEndTurn.disabled = false;
-        btnEndTurn.textContent = state.dice.length === 0 ? 'Afslut tur' : 'Fortsæt';
         if (stillLegal.length === 0 && state.dice.length > 0) {
           log('Ingen flere lovlige træk med de resterende terninger.', 'illegal');
         }
+        offerOrAutoEndTurn(state.dice.length === 0 ? 'Afslut tur' : 'Fortsæt');
       }
       return;
     }
