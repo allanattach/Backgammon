@@ -478,18 +478,27 @@
 
     diceDisplay.innerHTML = '';
     if (state.originalRoll.length) {
-      const total = state.originalRoll[0] === state.originalRoll[1] ? 4 : 2;
-      const usedN = total - state.dice.length;
       const faces = state.originalRoll[0] === state.originalRoll[1] ? new Array(4).fill(state.originalRoll[0]) : [...state.originalRoll];
-      faces.forEach((val, i) => {
+      // Match each face against the still-unplayed dice by value (not position) —
+      // dice can legally be played out of rolled order, so the face that's actually
+      // used depends on which value is gone from state.dice, not which slot it sat in.
+      const remainingPool = [...state.dice];
+      faces.forEach((val) => {
+        const poolIdx = remainingPool.indexOf(val);
+        const used = poolIdx === -1;
+        if (!used) remainingPool.splice(poolIdx, 1);
         const die = document.createElement('div');
-        die.className = 'die' + (i < usedN ? ' used' : '');
+        die.className = 'die' + (used ? ' used' : '');
         die.textContent = val;
         diceDisplay.appendChild(die);
       });
     }
 
-    btnRoll.disabled = state.dice.length > 0 || !isHumanTurn() || !!state.winner;
+    // Only re-enable rolling once the turn has actually ended (endTurn() clears
+    // originalRoll) — using state.dice.length here would re-enable the button the
+    // instant the last die is played, letting the same player roll again before
+    // clicking "Afslut tur".
+    btnRoll.disabled = state.originalRoll.length > 0 || !isHumanTurn() || !!state.winner;
     scoreWhite.textContent = scoreboard.white;
     scoreBlack.textContent = scoreboard.black;
     pipWhite.textContent = R.pipCount(state, 'white');
