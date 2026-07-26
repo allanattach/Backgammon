@@ -4,7 +4,7 @@
   "private": true,
   "description": "Standalone backgammon webapp - 2 spillere eller mod computeren",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/rules-engine.test.js",
     "start": "python3 -m http.server 8080"
   },
   "license": "MIT"
