@@ -100,12 +100,19 @@
     btnFullscreen.textContent = isFullscreen() ? '⤡' : '⛶';
     btnFullscreen.title = isFullscreen() ? 'Afslut fuld skærm' : 'Fuld skærm';
   }
+  function fullscreenEnabled() {
+    return document.fullscreenEnabled || document.webkitFullscreenEnabled || false;
+  }
   btnFullscreen.addEventListener('click', () => {
     const el = document.documentElement;
     if (!isFullscreen()) {
+      if (!fullscreenEnabled()) {
+        showToast('Fuld skærm er blokeret her (f.eks. fordi siden vises i en indlejret ramme). Åbn siden direkte i browseren for at bruge fuld skærm.', 'info');
+        return;
+      }
       const req = el.requestFullscreen || el.webkitRequestFullscreen;
       if (req) {
-        req.call(el).catch(() => showToast('Fuld skærm blev ikke understøttet af browseren.', 'info'));
+        req.call(el).catch(() => showToast('Fuld skærm kunne ikke aktiveres. Prøv at åbne siden direkte i browseren (ikke i en indlejret visning).', 'info'));
       } else {
         showToast('Fuld skærm understøttes ikke i denne browser.', 'info');
       }
