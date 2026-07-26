@@ -308,6 +308,9 @@ body {
   font-size: 0.75rem;
   font-weight: 700;
   box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 5;
+  will-change: transform;
 }
 .point.row-bottom .checker { margin-top: 0; margin-bottom: -22%; }
 .checker-stack > .checker:first-child { margin: 0; }
@@ -361,7 +364,7 @@ body {
 .off-half.top { flex-direction: column; }
 .off-half.clickable { cursor: pointer; }
 .off-half.selectable { outline: 2px dashed var(--accent); outline-offset: -4px; border-radius: 6px; }
-.off-checker { width: 60%; max-width: 22px; aspect-ratio: 1/1; border-radius: 50%; }
+.off-checker { width: 60%; max-width: 22px; aspect-ratio: 1/1; border-radius: 50%; position: relative; z-index: 5; will-change: transform; }
 .off-checker.white { background: var(--white-checker); border: 1px solid var(--white-checker-edge); }
 .off-checker.black { background: var(--black-checker); border: 1px solid var(--black-checker-edge); }
 .off-count { font-size: 0.7rem; color: var(--text-dim); }

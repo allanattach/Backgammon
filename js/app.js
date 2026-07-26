@@ -106,6 +106,72 @@
     messageLog.scrollTop = messageLog.scrollHeight;
   }
 
+  // ---- Checker movement animation (FLIP: capture position before the DOM rebuilds,
+  // then transition from there to the freshly-rendered resting position) ----
+  function findCheckerEl(locationKey, color) {
+    if (locationKey === 'bar') {
+      const half = boardEl.querySelector(color === 'white' ? '.bar-half.bottom' : '.bar-half.top');
+      return half ? half.lastElementChild : null;
+    }
+    if (locationKey === 'off') {
+      const half = boardEl.querySelector(color === 'white' ? '.off-half.bottom' : '.off-half.top');
+      return half ? half.lastElementChild : null;
+    }
+    const idx = parseInt(locationKey.split(':')[1], 10);
+    const pointEl = boardEl.querySelector('.point[data-point="' + (idx + 1) + '"]');
+    const stack = pointEl ? pointEl.querySelector('.checker-stack') : null;
+    return stack ? stack.lastElementChild : null;
+  }
+
+  function moveAnimationDuration() {
+    // Scales with the AI speed setting so an animation never outlasts the gap before
+    // the next move starts (otherwise a fast AI turn would visibly cut moves short).
+    return Math.max(120, Math.min(400, speedTimings().betweenMoves * 0.7));
+  }
+
+  const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function flipAnimateFrom(el, fromRect) {
+    if (!el || !fromRect || prefersReducedMotion) return;
+    const toRect = el.getBoundingClientRect();
+    const dx = (fromRect.left + fromRect.width / 2) - (toRect.left + toRect.width / 2);
+    const dy = (fromRect.top + fromRect.height / 2) - (toRect.top + toRect.height / 2);
+    const scale = toRect.width > 0 ? fromRect.width / toRect.width : 1;
+    if (!dx && !dy && Math.abs(scale - 1) < 0.01) return;
+    const duration = moveAnimationDuration();
+    el.style.transition = 'none';
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+    void el.offsetWidth; // force reflow so the "from" transform applies before we animate away from it
+    requestAnimationFrame(() => {
+      el.style.transition = `transform ${duration}ms cubic-bezier(.22,.85,.32,1)`;
+      el.style.transform = '';
+      const cleanup = () => { el.style.transition = ''; el.removeEventListener('transitionend', cleanup); };
+      el.addEventListener('transitionend', cleanup);
+    });
+  }
+
+  /** Capture the pre-move DOM positions needed to animate this move, before state changes. */
+  function captureMoveFlight(move, player) {
+    const fromKey = move.from === 'bar' ? 'bar' : 'idx:' + move.from;
+    const fromEl = findCheckerEl(fromKey, player);
+    const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
+    let hitFromRect = null;
+    if (move.hit) {
+      const hitEl = findCheckerEl('idx:' + move.to, R.opponent(player));
+      hitFromRect = hitEl ? hitEl.getBoundingClientRect() : null;
+    }
+    return { fromRect, hitFromRect };
+  }
+
+  /** After state has changed and the board been re-rendered, fly the moved (and hit) checkers in. */
+  function playMoveFlight(move, player, flight) {
+    const toKey = move.to === 'off' ? 'off' : 'idx:' + move.to;
+    flipAnimateFrom(findCheckerEl(toKey, player), flight.fromRect);
+    if (move.hit && flight.hitFromRect) {
+      flipAnimateFrom(findCheckerEl('bar', R.opponent(player)), flight.hitFromRect);
+    }
+  }
+
   function showToast(text, kind) {
     toast.textContent = text;
     toast.className = 'toast' + (kind === 'info' ? ' info' : '');
@@ -249,9 +315,12 @@
       return;
     }
     const mv = moves[i];
+    const player = state.turn;
+    const flight = captureMoveFlight(mv, player);
     state = R.playMove(state, mv);
-    describeMove(mv, state.turn);
+    describeMove(mv, player);
     renderAll();
+    playMoveFlight(mv, player, flight);
     if (state.winner) { showWin(); return; }
     setTimeout(() => playSequenceStepwise(moves, i + 1), speedTimings().betweenMoves);
   }
@@ -401,11 +470,13 @@
 
     if (match) {
       undoStack.push(R.cloneState(state));
+      const flight = captureMoveFlight(match, player);
       state = R.playMove(state, match);
       describeMove(match, player);
       selectedSource = null;
       updateUndoEndButtons();
       renderAll();
+      playMoveFlight(match, player, flight);
       if (state.winner) { showWin(); return; }
       const stillLegal = R.getLegalMoves(state);
       if (state.dice.length === 0 || stillLegal.length === 0) {
