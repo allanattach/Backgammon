@@ -45,11 +45,11 @@
           <label><input type="radio" name="difficulty" value="easy" /> Let</label>
           <label><input type="radio" name="difficulty" value="normal" checked /> Normal</label>
         </div>
-        <div id="speed-row" class="difficulty-row hidden">
-          <span>Tempo for computerens træk:</span>
-          <label><input type="radio" name="speed" value="slow" /> Langsom</label>
-          <label><input type="radio" name="speed" value="normal" checked /> Normal</label>
-          <label><input type="radio" name="speed" value="fast" /> Hurtig</label>
+        <div id="speed-row" class="speed-slider-row hidden">
+          <span>Tempo for computerens træk: <strong id="speed-slider-label">Normal</strong></span>
+          <input type="range" id="speed-slider" class="speed-slider" min="0" max="2" step="1" value="1"
+                 aria-label="Tempo for computerens træk" />
+          <div class="speed-slider-ticks"><span>Langsom</span><span>Normal</span><span>Hurtig</span></div>
         </div>
         <button id="btn-start" class="btn btn-primary" type="button" disabled>Start spil</button>
       </div>
@@ -77,11 +77,15 @@
               <button id="btn-undo" class="btn" type="button" disabled>Fortryd træk</button>
               <button id="btn-end-turn" class="btn" type="button" disabled>Afslut tur</button>
             </div>
-            <select id="live-speed-select" class="speed-select hidden" title="Computerens tempo" aria-label="Computerens tempo">
-              <option value="slow">Tempo: Langsom</option>
-              <option value="normal" selected>Tempo: Normal</option>
-              <option value="fast">Tempo: Hurtig</option>
-            </select>
+            <label class="auto-end-toggle">
+              <input type="checkbox" id="auto-end-turn-toggle" />
+              Afslut tur automatisk, når slagene er brugt
+            </label>
+            <div id="live-speed-row" class="speed-slider-row compact hidden">
+              <span>Tempo: <strong id="live-speed-label">Normal</strong></span>
+              <input type="range" id="live-speed-slider" class="speed-slider" min="0" max="2" step="1" value="1"
+                     aria-label="Computerens tempo" />
+            </div>
           </div>
           <div class="panel-block">
             <h3>Stilling</h3>

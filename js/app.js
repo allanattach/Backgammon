@@ -26,7 +26,12 @@
   const rulesModal = document.getElementById('rules-modal');
   const rulesContent = document.getElementById('rules-content');
   const speedRow = document.getElementById('speed-row');
-  const liveSpeedSelect = document.getElementById('live-speed-select');
+  const speedSlider = document.getElementById('speed-slider');
+  const speedSliderLabel = document.getElementById('speed-slider-label');
+  const liveSpeedRow = document.getElementById('live-speed-row');
+  const liveSpeedSlider = document.getElementById('live-speed-slider');
+  const liveSpeedLabel = document.getElementById('live-speed-label');
+  const autoEndTurnToggle = document.getElementById('auto-end-turn-toggle');
 
   rulesContent.innerHTML = window.BgRulesText;
 
@@ -41,9 +46,12 @@
   let scoreboard = loadScoreboard();
 
   // How fast the computer's moves play out, so the moves stay watchable instead of
-  // flashing by. All timings are in milliseconds.
+  // flashing by. All timings are in milliseconds. Slider position 0/1/2 maps to
+  // slow/normal/fast.
+  const SPEED_ORDER = ['slow', 'normal', 'fast'];
+  const SPEED_LABELS = { slow: 'Langsom', normal: 'Normal', fast: 'Hurtig' };
   const SPEED_PRESETS = {
-    slow: { beforeAiTurn: 1000, betweenMoves: 1300, afterSequence: 900, beforeAiRoll: 900 },
+    slow: { beforeAiTurn: 1800, betweenMoves: 2600, afterSequence: 1800, beforeAiRoll: 1800 },
     normal: { beforeAiTurn: 550, betweenMoves: 450, afterSequence: 500, beforeAiRoll: 500 },
     fast: { beforeAiTurn: 150, betweenMoves: 130, afterSequence: 150, beforeAiRoll: 150 },
   };
@@ -62,18 +70,62 @@
   function speedTimings() { return SPEED_PRESETS[aiSpeed]; }
 
   function syncSpeedControls() {
-    document.querySelectorAll('input[name="speed"]').forEach((r) => { r.checked = r.value === aiSpeed; });
-    liveSpeedSelect.value = aiSpeed;
+    const idx = SPEED_ORDER.indexOf(aiSpeed);
+    speedSlider.value = idx;
+    liveSpeedSlider.value = idx;
+    speedSliderLabel.textContent = SPEED_LABELS[aiSpeed];
+    liveSpeedLabel.textContent = SPEED_LABELS[aiSpeed];
   }
   syncSpeedControls();
 
-  document.querySelectorAll('input[name="speed"]').forEach((r) => {
-    r.addEventListener('change', () => { aiSpeed = r.value; saveSpeed(); });
-  });
-  liveSpeedSelect.addEventListener('change', () => {
-    aiSpeed = liveSpeedSelect.value;
+  function setSpeedFromSlider(sliderEl) {
+    aiSpeed = SPEED_ORDER[Number(sliderEl.value)];
     saveSpeed();
+    syncSpeedControls();
+  }
+  // 'input' fires continuously while dragging, so both sliders (start screen and
+  // in-game) stay in sync live and the setting takes effect immediately.
+  speedSlider.addEventListener('input', () => setSpeedFromSlider(speedSlider));
+  liveSpeedSlider.addEventListener('input', () => setSpeedFromSlider(liveSpeedSlider));
+
+  // ---- Auto-end-turn: optionally end a human turn automatically once no dice/moves
+  // remain, instead of requiring a manual "Afslut tur" click. ----
+  let autoEndTurn = loadAutoEndTurn();
+  let pendingAutoEndTimer = null;
+
+  function loadAutoEndTurn() {
+    try { return localStorage.getItem('bg_auto_end_turn') === '1'; } catch (e) { return false; }
+  }
+  function saveAutoEndTurn() {
+    try { localStorage.setItem('bg_auto_end_turn', autoEndTurn ? '1' : '0'); } catch (e) { /* ignore */ }
+  }
+  autoEndTurnToggle.checked = autoEndTurn;
+  autoEndTurnToggle.addEventListener('change', () => {
+    autoEndTurn = autoEndTurnToggle.checked;
+    saveAutoEndTurn();
   });
+
+  function cancelPendingAutoEnd() {
+    if (pendingAutoEndTimer !== null) {
+      clearTimeout(pendingAutoEndTimer);
+      pendingAutoEndTimer = null;
+    }
+  }
+
+  /** Call once a human turn has no more legal moves: either waits for a manual click
+   * on "Afslut tur"/"Fortsæt", or - if the auto-end toggle is on - ends it automatically
+   * after a short pause (so the player still sees the final position/animation). */
+  function offerOrAutoEndTurn(label) {
+    btnEndTurn.disabled = false;
+    btnEndTurn.textContent = label;
+    if (autoEndTurn) {
+      cancelPendingAutoEnd();
+      pendingAutoEndTimer = setTimeout(() => {
+        pendingAutoEndTimer = null;
+        endTurn();
+      }, speedTimings().afterSequence);
+    }
+  }
 
   function loadScoreboard() {
     try {
@@ -92,6 +144,72 @@
     line.textContent = text;
     messageLog.appendChild(line);
     messageLog.scrollTop = messageLog.scrollHeight;
+  }
+
+  // ---- Checker movement animation (FLIP: capture position before the DOM rebuilds,
+  // then transition from there to the freshly-rendered resting position) ----
+  function findCheckerEl(locationKey, color) {
+    if (locationKey === 'bar') {
+      const half = boardEl.querySelector(color === 'white' ? '.bar-half.bottom' : '.bar-half.top');
+      return half ? half.lastElementChild : null;
+    }
+    if (locationKey === 'off') {
+      const half = boardEl.querySelector(color === 'white' ? '.off-half.bottom' : '.off-half.top');
+      return half ? half.lastElementChild : null;
+    }
+    const idx = parseInt(locationKey.split(':')[1], 10);
+    const pointEl = boardEl.querySelector('.point[data-point="' + (idx + 1) + '"]');
+    const stack = pointEl ? pointEl.querySelector('.checker-stack') : null;
+    return stack ? stack.lastElementChild : null;
+  }
+
+  function moveAnimationDuration() {
+    // Scales with the AI speed setting so an animation never outlasts the gap before
+    // the next move starts (otherwise a fast AI turn would visibly cut moves short).
+    return Math.max(120, Math.min(1100, speedTimings().betweenMoves * 0.7));
+  }
+
+  const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function flipAnimateFrom(el, fromRect) {
+    if (!el || !fromRect || prefersReducedMotion) return;
+    const toRect = el.getBoundingClientRect();
+    const dx = (fromRect.left + fromRect.width / 2) - (toRect.left + toRect.width / 2);
+    const dy = (fromRect.top + fromRect.height / 2) - (toRect.top + toRect.height / 2);
+    const scale = toRect.width > 0 ? fromRect.width / toRect.width : 1;
+    if (!dx && !dy && Math.abs(scale - 1) < 0.01) return;
+    const duration = moveAnimationDuration();
+    el.style.transition = 'none';
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+    void el.offsetWidth; // force reflow so the "from" transform applies before we animate away from it
+    requestAnimationFrame(() => {
+      el.style.transition = `transform ${duration}ms cubic-bezier(.22,.85,.32,1)`;
+      el.style.transform = '';
+      const cleanup = () => { el.style.transition = ''; el.removeEventListener('transitionend', cleanup); };
+      el.addEventListener('transitionend', cleanup);
+    });
+  }
+
+  /** Capture the pre-move DOM positions needed to animate this move, before state changes. */
+  function captureMoveFlight(move, player) {
+    const fromKey = move.from === 'bar' ? 'bar' : 'idx:' + move.from;
+    const fromEl = findCheckerEl(fromKey, player);
+    const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
+    let hitFromRect = null;
+    if (move.hit) {
+      const hitEl = findCheckerEl('idx:' + move.to, R.opponent(player));
+      hitFromRect = hitEl ? hitEl.getBoundingClientRect() : null;
+    }
+    return { fromRect, hitFromRect };
+  }
+
+  /** After state has changed and the board been re-rendered, fly the moved (and hit) checkers in. */
+  function playMoveFlight(move, player, flight) {
+    const toKey = move.to === 'off' ? 'off' : 'idx:' + move.to;
+    flipAnimateFrom(findCheckerEl(toKey, player), flight.fromRect);
+    if (move.hit && flight.hitFromRect) {
+      flipAnimateFrom(findCheckerEl('bar', R.opponent(player)), flight.hitFromRect);
+    }
   }
 
   function showToast(text, kind) {
@@ -118,12 +236,8 @@
     if (mode === 'pvc') {
       const sel = document.querySelector('input[name="difficulty"]:checked');
       difficulty = sel ? sel.value : 'normal';
-      const speedSel = document.querySelector('input[name="speed"]:checked');
-      aiSpeed = speedSel ? speedSel.value : aiSpeed;
-      saveSpeed();
     }
-    liveSpeedSelect.classList.toggle('hidden', mode !== 'pvc');
-    syncSpeedControls();
+    liveSpeedRow.classList.toggle('hidden', mode !== 'pvc');
     startScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     beginNewGame();
@@ -178,6 +292,7 @@
 
   // ---- Game lifecycle ----
   function beginNewGame() {
+    cancelPendingAutoEnd();
     messageLog.innerHTML = '';
     undoStack = [];
     selectedSource = null;
@@ -212,8 +327,7 @@
       if (legal.length === 0) {
         log(`${PLAYER_LABEL[state.turn]} har ingen lovlige træk med ${state.dice.join(', ') || 'terningerne'} og springer over.`, 'illegal');
         awaitingHumanInput = false;
-        btnEndTurn.disabled = false;
-        btnEndTurn.textContent = 'Fortsæt';
+        offerOrAutoEndTurn('Fortsæt');
       }
       renderAll();
     } else {
@@ -241,9 +355,12 @@
       return;
     }
     const mv = moves[i];
+    const player = state.turn;
+    const flight = captureMoveFlight(mv, player);
     state = R.playMove(state, mv);
-    describeMove(mv, state.turn);
+    describeMove(mv, player);
     renderAll();
+    playMoveFlight(mv, player, flight);
     if (state.winner) { showWin(); return; }
     setTimeout(() => playSequenceStepwise(moves, i + 1), speedTimings().betweenMoves);
   }
@@ -256,6 +373,7 @@
   }
 
   function endTurn() {
+    cancelPendingAutoEnd();
     selectedSource = null;
     const next = opponentOf(state.turn);
     state = { ...R.cloneState(state), turn: next, dice: [], originalRoll: [], movesPlayedThisTurn: 0, history: [] };
@@ -289,9 +407,14 @@
 
   btnUndo.addEventListener('click', () => {
     if (undoStack.length === 0) return;
+    cancelPendingAutoEnd();
     state = undoStack.pop();
     selectedSource = null;
     log('Sidste træk fortrudt.', 'info');
+    // Undo only ever pops a state from within the current human turn, which by
+    // definition still has the undone move (or another) available - restore board
+    // interactivity, which the "no more moves" path had turned off.
+    awaitingHumanInput = true;
     updateUndoEndButtons();
     renderAll();
   });
@@ -393,20 +516,21 @@
 
     if (match) {
       undoStack.push(R.cloneState(state));
+      const flight = captureMoveFlight(match, player);
       state = R.playMove(state, match);
       describeMove(match, player);
       selectedSource = null;
       updateUndoEndButtons();
       renderAll();
+      playMoveFlight(match, player, flight);
       if (state.winner) { showWin(); return; }
       const stillLegal = R.getLegalMoves(state);
       if (state.dice.length === 0 || stillLegal.length === 0) {
         awaitingHumanInput = false;
-        btnEndTurn.disabled = false;
-        btnEndTurn.textContent = state.dice.length === 0 ? 'Afslut tur' : 'Fortsæt';
         if (stillLegal.length === 0 && state.dice.length > 0) {
           log('Ingen flere lovlige træk med de resterende terninger.', 'illegal');
         }
+        offerOrAutoEndTurn(state.dice.length === 0 ? 'Afslut tur' : 'Fortsæt');
       }
       return;
     }
@@ -518,6 +642,8 @@
 
     turnText.textContent = `${PLAYER_LABEL[state.turn]}${mode === 'pvc' && state.turn !== humanPlayer ? ' (computer)' : ''}`;
     turnText.className = state.turn === 'white' ? 'white-turn' : 'black-turn';
+    btnRoll.classList.remove('turn-white', 'turn-black');
+    btnRoll.classList.add(state.turn === 'white' ? 'turn-white' : 'turn-black');
 
     diceDisplay.innerHTML = '';
     if (state.originalRoll.length) {

@@ -68,6 +68,21 @@ body {
 .btn-primary:hover:not(:disabled) { background: var(--accent); }
 .btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
 
+/* Roll-dice button is tinted to match whichever colour is on move, so in 2-player mode
+   it's immediately obvious whose turn it is without reading the text label. */
+#btn-roll.turn-white {
+  background: var(--white-checker);
+  border-color: var(--white-checker-edge);
+  color: #2a2a2e;
+}
+#btn-roll.turn-white:hover:not(:disabled) { background: #fff; }
+#btn-roll.turn-black {
+  background: var(--black-checker);
+  border-color: #000;
+  color: var(--white-checker);
+}
+#btn-roll.turn-black:hover:not(:disabled) { background: #3a3a3e; }
+
 #app {
   flex: 1 1 auto;
   min-height: 0;
@@ -158,22 +173,79 @@ body {
 }
 .die.used { opacity: 0.3; text-decoration: line-through; }
 
-.actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.actions-row .btn { flex: 1 1 auto; }
+.actions-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.actions-row .btn { flex: 1 1 auto; font-size: 0.78rem; padding: 0.45rem 0.4rem; white-space: nowrap; }
 
-.speed-select {
-  display: block;
-  width: 100%;
-  min-height: 40px;
-  margin-top: 0.5rem;
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
+.auto-end-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  color: var(--text-dim);
   cursor: pointer;
 }
+.auto-end-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+
+.speed-slider-row { font-size: 0.9rem; }
+.speed-slider-row.compact { margin-top: 0.25rem; font-size: 0.72rem; }
+.speed-slider-row > span { color: var(--text-dim); }
+.speed-slider-row strong { color: var(--text); }
+
+.speed-slider {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0 0.25rem;
+  height: 32px;
+  /* Full-width track via appearance:none, styled the same across browsers below. */
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.speed-slider-row.compact .speed-slider { margin: 0.15rem 0 0; height: 24px; }
+.speed-slider-row.compact .speed-slider::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -8px; }
+.speed-slider-row.compact .speed-slider::-moz-range-thumb { width: 22px; height: 22px; }
+.speed-slider:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.speed-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-border);
+}
+.speed-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-border);
+}
+.speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--accent-dim);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.speed-slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--accent-dim);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.speed-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: -0.15rem;
+}
+.speed-slider-row.compact .speed-slider-ticks { font-size: 0.65rem; }
 .score-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .score-table td { padding: 0.2rem 0.2rem; }
 
@@ -263,6 +335,9 @@ body {
   font-size: 0.75rem;
   font-weight: 700;
   box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 5;
+  will-change: transform;
 }
 .point.row-bottom .checker { margin-top: 0; margin-bottom: -22%; }
 .checker-stack > .checker:first-child { margin: 0; }
@@ -316,7 +391,7 @@ body {
 .off-half.top { flex-direction: column; }
 .off-half.clickable { cursor: pointer; }
 .off-half.selectable { outline: 2px dashed var(--accent); outline-offset: -4px; border-radius: 6px; }
-.off-checker { width: 60%; max-width: 22px; aspect-ratio: 1/1; border-radius: 50%; }
+.off-checker { width: 60%; max-width: 22px; aspect-ratio: 1/1; border-radius: 50%; position: relative; z-index: 5; will-change: transform; }
 .off-checker.white { background: var(--white-checker); border: 1px solid var(--white-checker-edge); }
 .off-checker.black { background: var(--black-checker); border: 1px solid var(--black-checker-edge); }
 .off-count { font-size: 0.7rem; color: var(--text-dim); }
