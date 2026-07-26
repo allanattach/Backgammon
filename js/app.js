@@ -26,7 +26,11 @@
   const rulesModal = document.getElementById('rules-modal');
   const rulesContent = document.getElementById('rules-content');
   const speedRow = document.getElementById('speed-row');
-  const liveSpeedSelect = document.getElementById('live-speed-select');
+  const speedSlider = document.getElementById('speed-slider');
+  const speedSliderLabel = document.getElementById('speed-slider-label');
+  const liveSpeedRow = document.getElementById('live-speed-row');
+  const liveSpeedSlider = document.getElementById('live-speed-slider');
+  const liveSpeedLabel = document.getElementById('live-speed-label');
 
   rulesContent.innerHTML = window.BgRulesText;
 
@@ -41,7 +45,10 @@
   let scoreboard = loadScoreboard();
 
   // How fast the computer's moves play out, so the moves stay watchable instead of
-  // flashing by. All timings are in milliseconds.
+  // flashing by. All timings are in milliseconds. Slider position 0/1/2 maps to
+  // slow/normal/fast.
+  const SPEED_ORDER = ['slow', 'normal', 'fast'];
+  const SPEED_LABELS = { slow: 'Langsom', normal: 'Normal', fast: 'Hurtig' };
   const SPEED_PRESETS = {
     slow: { beforeAiTurn: 1000, betweenMoves: 1300, afterSequence: 900, beforeAiRoll: 900 },
     normal: { beforeAiTurn: 550, betweenMoves: 450, afterSequence: 500, beforeAiRoll: 500 },
@@ -62,18 +69,23 @@
   function speedTimings() { return SPEED_PRESETS[aiSpeed]; }
 
   function syncSpeedControls() {
-    document.querySelectorAll('input[name="speed"]').forEach((r) => { r.checked = r.value === aiSpeed; });
-    liveSpeedSelect.value = aiSpeed;
+    const idx = SPEED_ORDER.indexOf(aiSpeed);
+    speedSlider.value = idx;
+    liveSpeedSlider.value = idx;
+    speedSliderLabel.textContent = SPEED_LABELS[aiSpeed];
+    liveSpeedLabel.textContent = SPEED_LABELS[aiSpeed];
   }
   syncSpeedControls();
 
-  document.querySelectorAll('input[name="speed"]').forEach((r) => {
-    r.addEventListener('change', () => { aiSpeed = r.value; saveSpeed(); });
-  });
-  liveSpeedSelect.addEventListener('change', () => {
-    aiSpeed = liveSpeedSelect.value;
+  function setSpeedFromSlider(sliderEl) {
+    aiSpeed = SPEED_ORDER[Number(sliderEl.value)];
     saveSpeed();
-  });
+    syncSpeedControls();
+  }
+  // 'input' fires continuously while dragging, so both sliders (start screen and
+  // in-game) stay in sync live and the setting takes effect immediately.
+  speedSlider.addEventListener('input', () => setSpeedFromSlider(speedSlider));
+  liveSpeedSlider.addEventListener('input', () => setSpeedFromSlider(liveSpeedSlider));
 
   function loadScoreboard() {
     try {
@@ -118,12 +130,8 @@
     if (mode === 'pvc') {
       const sel = document.querySelector('input[name="difficulty"]:checked');
       difficulty = sel ? sel.value : 'normal';
-      const speedSel = document.querySelector('input[name="speed"]:checked');
-      aiSpeed = speedSel ? speedSel.value : aiSpeed;
-      saveSpeed();
     }
-    liveSpeedSelect.classList.toggle('hidden', mode !== 'pvc');
-    syncSpeedControls();
+    liveSpeedRow.classList.toggle('hidden', mode !== 'pvc');
     startScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     beginNewGame();
