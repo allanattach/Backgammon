@@ -143,6 +143,32 @@
     try { localStorage.setItem('bg_scoreboard', JSON.stringify(scoreboard)); } catch (e) { /* ignore */ }
   }
 
+  // ---- Save/resume the game in progress, so closing the browser (or the tab, or
+  // the tablet's screen) never loses a game - reopening the app continues right
+  // where it left off. Uses localStorage rather than an actual cookie: this is a
+  // static site with no server to send a cookie to, and localStorage has no
+  // practical size limit for a small JSON blob like this. ----
+  const SAVE_KEY = 'bg_saved_game';
+  const SAVE_VERSION = 1;
+
+  function saveGame() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ v: SAVE_VERSION, mode, difficulty, humanPlayer, state }));
+    } catch (e) { /* ignore (private browsing, quota, etc.) */ }
+  }
+  function loadSavedGame() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      const saved = JSON.parse(raw);
+      if (saved && saved.v === SAVE_VERSION && saved.state && saved.mode) return saved;
+    } catch (e) { /* ignore corrupt data */ }
+    return null;
+  }
+  function clearSavedGame() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
+  }
+
   function log(text, kind) {
     const line = document.createElement('div');
     line.className = 'msg-' + (kind || 'info');
@@ -310,6 +336,7 @@
   });
 
   document.getElementById('btn-new-game').addEventListener('click', () => {
+    clearSavedGame();
     gameScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
   });
@@ -757,5 +784,50 @@
     scoreBlack.textContent = scoreboard.black;
     pipWhite.textContent = R.pipCount(state, 'white');
     pipBlack.textContent = R.pipCount(state, 'black');
+
+    // A finished game has nothing left to resume; a game in progress is saved
+    // after every change so it can always be picked back up later.
+    if (state.winner) clearSavedGame(); else saveGame();
   }
+
+  // ---- Resume a saved game on load, if one exists ----
+  function resumeSavedGame() {
+    const saved = loadSavedGame();
+    if (!saved) return;
+    mode = saved.mode;
+    difficulty = saved.difficulty || 'normal';
+    humanPlayer = saved.humanPlayer || 'white';
+    state = saved.state;
+    selectedSource = null;
+    undoStack = [];
+    messageLog.innerHTML = '';
+    log('Spillet er genoptaget, hvor du slap.', 'info');
+    startScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+
+    if (isHumanTurn()) {
+      if (state.dice.length === 0) {
+        awaitingHumanInput = false;
+      } else {
+        const legal = R.getLegalMoves(state);
+        awaitingHumanInput = legal.length > 0;
+        if (!awaitingHumanInput) offerOrAutoEndTurn(state.dice.length === 0 ? 'Afslut tur' : 'Fortsæt');
+      }
+      updateUndoEndButtons();
+      renderAll();
+    } else {
+      awaitingHumanInput = false;
+      updateUndoEndButtons();
+      renderAll();
+      // The computer's own roll/move loop was interrupted by the reload - restart
+      // it from wherever the saved dice/state left off.
+      if (state.dice.length === 0) {
+        setTimeout(rollForAI, speedTimings().beforeAiRoll);
+      } else {
+        setTimeout(aiTakeTurn, speedTimings().beforeAiTurn);
+      }
+    }
+  }
+
+  resumeSavedGame();
 })();
