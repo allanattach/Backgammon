@@ -51,6 +51,10 @@
                  aria-label="Tempo for terningeslag og træk" />
           <div class="speed-slider-ticks"><span>Langsom</span><span>Normal</span><span>Hurtig</span></div>
         </div>
+        <label class="auto-end-toggle">
+          <input type="checkbox" id="cube-enabled-toggle" />
+          Brug fordoblingsterning (mulighed for at fordoble indsatsen undervejs)
+        </label>
         <button id="btn-start" class="btn btn-primary" type="button" disabled>Start spil</button>
       </div>
     </section>
@@ -71,6 +75,13 @@
             <div class="dice-roll-row">
               <button id="btn-roll" class="dice-cup-btn" type="button" title="Slå terninger" aria-label="Slå terninger"></button>
               <div id="dice-display" class="dice-display"></div>
+            </div>
+          </div>
+          <div class="panel-block hidden" id="cube-block">
+            <h3>Fordoblingsterning</h3>
+            <div class="cube-row">
+              <div id="cube-display" class="cube-display centered">1</div>
+              <button id="btn-double" class="btn" type="button" disabled>Fordobl</button>
             </div>
           </div>
           <div class="panel-block">
@@ -115,7 +126,20 @@
     <div class="modal">
       <h2 id="win-title">Spillet er slut</h2>
       <p id="win-detail"></p>
+      <p id="win-score-standing" class="win-score-standing"></p>
       <button id="btn-play-again" class="btn btn-primary" type="button">Spil igen</button>
+    </div>
+  </div>
+
+  <!-- Doubling-cube offer (shown to whichever player must accept or decline) -->
+  <div id="double-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h2>Fordobling tilbudt</h2>
+      <p id="double-offer-text"></p>
+      <div class="actions-row">
+        <button id="btn-double-accept" class="btn btn-primary" type="button">Tag imod</button>
+        <button id="btn-double-decline" class="btn" type="button">Afslå</button>
+      </div>
     </div>
   </div>
 

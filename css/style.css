@@ -136,6 +136,10 @@ body {
   flex-direction: column;
   gap: 0.55rem;
   min-height: 0;
+  /* On a short landscape viewport, the panel's blocks can add up to more than the
+     available height (e.g. with the optional doubling-cube block showing) - scroll
+     within the panel itself rather than letting the whole page grow past the screen. */
+  overflow-y: auto;
 }
 
 .panel-block {
@@ -232,6 +236,22 @@ body {
 .dice-cup-btn.shaking { animation: cup-shake 0.48s ease-in-out; }
 .dice-cup-btn.pouring { animation: cup-pour 0.2s ease-in forwards; }
 .dice-roll-row .dice-display { margin-bottom: 0; }
+
+/* Doubling cube: a flat square (deliberately distinct from the round dice) showing
+   the current stake multiplier, dashed while centered (nobody owns it yet) and
+   solid once a player owns the right to the next double. */
+.cube-row { display: flex; align-items: center; gap: 0.6rem; }
+.cube-display {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 2px solid var(--accent);
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.1rem;
+}
+.cube-display.centered { border-style: dashed; border-color: var(--text-dim); opacity: 0.8; }
+.cube-row .btn { flex: 1 1 auto; font-size: 0.8rem; }
 
 @keyframes cup-shake {
   0%, 100% { transform: translateX(0) rotate(0deg); }
@@ -528,6 +548,7 @@ body {
   position: relative;
 }
 .modal-large { max-width: 720px; max-height: 85vh; overflow-y: auto; text-align: left; }
+.win-score-standing { font-weight: 700; font-size: 1.05rem; color: var(--accent); margin: 0.3rem 0 1.1rem; }
 .modal-close {
   position: absolute; top: 0.75rem; right: 0.9rem;
   background: none; border: none; color: var(--text-dim);

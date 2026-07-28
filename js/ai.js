@@ -113,5 +113,30 @@
     return best;
   }
 
-  return { evaluate, enumerateSequences, chooseSequence, shotsAgainst };
+  // ---- Doubling cube decisions ----
+  // Deliberately simple: real cube theory weighs equity from contact/timing as well
+  // as the race, which this AI does not model. Pip-count lead alone is a reasonable
+  // stand-in and matches the heuristic (not lookahead-search) style of the rest of
+  // this file.
+
+  /** Positive when `player` is ahead in the pip-count race. */
+  function pipLead(state, player) {
+    return R.pipCount(state, R.opponent(player)) - R.pipCount(state, player);
+  }
+
+  /** Offer a double once clearly ahead, but not so far ahead that the opponent
+   * would obviously drop and deny a potentially larger gammon/backgammon win. */
+  function shouldOfferDouble(state, player) {
+    return pipLead(state, player) >= 25;
+  }
+
+  /** Accept a double unless clearly, heavily behind in the race. */
+  function shouldAcceptDouble(state, player) {
+    return pipLead(state, player) > -60;
+  }
+
+  return {
+    evaluate, enumerateSequences, chooseSequence, shotsAgainst,
+    pipLead, shouldOfferDouble, shouldAcceptDouble,
+  };
 });
