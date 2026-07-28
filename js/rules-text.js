@@ -31,7 +31,16 @@
       <li><strong>Backgammon (tredobbelt):</strong> Modstanderen har hverken båret nogen brikker af og har stadig en brik på baren eller i din vinderens hjemmefelt.</li>
     </ul>
 
+    <h3>Fordoblingsterningen (valgfri)</h3>
+    <p>Kan slås til på startskærmen. Det er en separat terning med tallene 2, 4, 8, 16, 32 og 64, der bruges til at forhøje indsatsen undervejs – ikke til at flytte brikker med.</p>
+    <p>På sin egen tur, <strong>før</strong> man slår sine terninger, kan man i stedet tilbyde at fordoble indsatsen. Modstanderen skal så vælge:</p>
+    <ul>
+      <li><strong>Tage imod:</strong> Indsatsen fordobles, spillet fortsætter, og nu er det modstanderen, der ejer terningen – kun vedkommende må tilbyde den næste fordobling.</li>
+      <li><strong>Afslå:</strong> Spillet slutter med det samme, og man taber til den indsats, terningen viste <em>før</em> fordoblingsforsøget.</li>
+    </ul>
+    <p>Gammon og backgammon ganger stadig den endelige (evt. fordoblede) indsats med hhv. 2 eller 3.</p>
+
     <h3>Bemærk</h3>
-    <p>Denne udgave følger de officielle bevægelses- og udtagningsregler for backgammon. Fordoblingsterningen (bruges normalt i match- og pengespil) er ikke inkluderet – hvert spil afgøres for sig selv.</p>
+    <p>Denne udgave følger de officielle bevægelses- og udtagningsregler for backgammon.</p>
   `;
 })(typeof window !== 'undefined' ? window : globalThis);

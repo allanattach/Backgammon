@@ -23,6 +23,7 @@
   const winDialog = document.getElementById('win-dialog');
   const winTitle = document.getElementById('win-title');
   const winDetail = document.getElementById('win-detail');
+  const winScoreStanding = document.getElementById('win-score-standing');
   const rulesModal = document.getElementById('rules-modal');
   const rulesContent = document.getElementById('rules-content');
   const speedSlider = document.getElementById('speed-slider');
@@ -30,6 +31,14 @@
   const liveSpeedSlider = document.getElementById('live-speed-slider');
   const liveSpeedLabel = document.getElementById('live-speed-label');
   const autoEndTurnToggle = document.getElementById('auto-end-turn-toggle');
+  const cubeEnabledToggle = document.getElementById('cube-enabled-toggle');
+  const cubeBlock = document.getElementById('cube-block');
+  const cubeDisplay = document.getElementById('cube-display');
+  const btnDouble = document.getElementById('btn-double');
+  const doubleModal = document.getElementById('double-modal');
+  const doubleOfferText = document.getElementById('double-offer-text');
+  const btnDoubleAccept = document.getElementById('btn-double-accept');
+  const btnDoubleDecline = document.getElementById('btn-double-decline');
 
   rulesContent.innerHTML = window.BgRulesText;
 
@@ -132,6 +141,96 @@
     }
   }
 
+  // ---- Doubling cube (optional, chosen per game on the start screen) ----
+  // Deliberately kept out of the rules-engine `state`: it's stakes/scoring, not a
+  // board-movement rule, so it resets each new game like `state` does but lives
+  // alongside `scoreboard` as its own app-level concern.
+  let cubeEnabled = loadCubeEnabled();
+  let cubeValue = 1;
+  let cubeOwner = null; // null = centered (either player may double); else who may next
+
+  function loadCubeEnabled() {
+    try { return localStorage.getItem('bg_cube_enabled') === '1'; } catch (e) { return false; }
+  }
+  function saveCubeEnabled() {
+    try { localStorage.setItem('bg_cube_enabled', cubeEnabled ? '1' : '0'); } catch (e) { /* ignore */ }
+  }
+  cubeEnabledToggle.checked = cubeEnabled;
+  cubeEnabledToggle.addEventListener('change', () => {
+    cubeEnabled = cubeEnabledToggle.checked;
+    saveCubeEnabled();
+  });
+
+  function updateWinScoreStanding() {
+    winScoreStanding.textContent = `Stilling: Hvid ${scoreboard.white} – Sort ${scoreboard.black}`;
+  }
+
+  function showDoubleOfferModal(offerer, responder) {
+    doubleOfferText.textContent = `${PLAYER_LABEL[offerer]} tilbyder at fordoble indsatsen fra ${cubeValue} til ${cubeValue * 2}. ${PLAYER_LABEL[responder]} skal tage stilling.`;
+    doubleModal.classList.remove('hidden');
+    function onAccept() { cleanup(); resolveDoubleOffer(offerer, true); }
+    function onDecline() { cleanup(); resolveDoubleOffer(offerer, false); }
+    function cleanup() {
+      doubleModal.classList.add('hidden');
+      btnDoubleAccept.removeEventListener('click', onAccept);
+      btnDoubleDecline.removeEventListener('click', onDecline);
+    }
+    btnDoubleAccept.addEventListener('click', onAccept);
+    btnDoubleDecline.addEventListener('click', onDecline);
+  }
+
+  function resolveDoubleOffer(offerer, accepted) {
+    const responder = opponentOf(offerer);
+    if (accepted) {
+      cubeValue *= 2;
+      cubeOwner = responder;
+      log(`${PLAYER_LABEL[responder]} tager imod fordoblingen – terningen er nu ${cubeValue} og ejes af ${PLAYER_LABEL[responder]}.`, 'info');
+      renderAll();
+      // The offerer is still on turn and hasn't rolled yet - if that's the computer,
+      // its own roll needs restarting (a human just clicks "Slå terninger" themselves).
+      if (!isHumanTurn()) setTimeout(rollForAI, speedTimings().beforeAiRoll);
+      return;
+    }
+    log(`${PLAYER_LABEL[responder]} afslår fordoblingen.`, 'illegal');
+    scoreboard[offerer] += cubeValue;
+    saveScoreboard();
+    winTitle.textContent = `${PLAYER_LABEL[offerer]} vinder!`;
+    winDetail.textContent = `${PLAYER_LABEL[responder]} afslog fordoblingen til ${cubeValue * 2} (+${cubeValue} point).`;
+    updateWinScoreStanding();
+    renderAll();
+    // Must run after renderAll(), which - not knowing the game ended via a declined
+    // double rather than a bear-off win - would otherwise re-save it as still in progress.
+    clearSavedGame();
+    winDialog.classList.remove('hidden');
+  }
+
+  btnDouble.addEventListener('click', () => {
+    if (btnDouble.disabled) return;
+    cancelPendingAutoEnd();
+    const offerer = state.turn;
+    const responder = opponentOf(offerer);
+    log(`${PLAYER_LABEL[offerer]} tilbyder at fordoble til ${cubeValue * 2}.`, 'info');
+    if (mode === 'pvc' && responder !== humanPlayer) {
+      // The computer responds instantly rather than via the modal (which is for a
+      // human to click through).
+      resolveDoubleOffer(offerer, AI.shouldAcceptDouble(state, responder));
+    } else {
+      showDoubleOfferModal(offerer, responder);
+    }
+  });
+
+  /** Called at the start of the computer's turn (before it would otherwise roll),
+   * so it gets the same chance a human has to offer a double first. */
+  function aiTurnStart() {
+    const offerer = state.turn;
+    if (cubeEnabled && (cubeOwner === null || cubeOwner === offerer) && AI.shouldOfferDouble(state, offerer)) {
+      log(`${PLAYER_LABEL[offerer]} (computer) tilbyder at fordoble til ${cubeValue * 2}.`, 'info');
+      showDoubleOfferModal(offerer, opponentOf(offerer));
+      return;
+    }
+    rollForAI();
+  }
+
   function loadScoreboard() {
     try {
       const raw = localStorage.getItem('bg_scoreboard');
@@ -149,11 +248,13 @@
   // static site with no server to send a cookie to, and localStorage has no
   // practical size limit for a small JSON blob like this. ----
   const SAVE_KEY = 'bg_saved_game';
-  const SAVE_VERSION = 1;
+  const SAVE_VERSION = 2; // bumped when the doubling cube fields were added
 
   function saveGame() {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({ v: SAVE_VERSION, mode, difficulty, humanPlayer, state }));
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        v: SAVE_VERSION, mode, difficulty, humanPlayer, state, cubeEnabled, cubeValue, cubeOwner,
+      }));
     } catch (e) { /* ignore (private browsing, quota, etc.) */ }
   }
   function loadSavedGame() {
@@ -390,6 +491,10 @@
     undoStack = [];
     selectedSource = null;
     state = R.createInitialState();
+    // The cube resets every game even in a multi-game match - only the scoreboard
+    // (and the enabled/disabled choice itself) carries across games.
+    cubeValue = 1;
+    cubeOwner = null;
 
     let dWhite, dBlack;
     do {
@@ -477,8 +582,8 @@
     awaitingHumanInput = false;
     renderAll();
     if (!isHumanTurn()) {
-      // AI rolls automatically.
-      setTimeout(rollForAI, speedTimings().beforeAiRoll);
+      // AI rolls automatically (or offers a double first, if it wants to).
+      setTimeout(aiTurnStart, speedTimings().beforeAiRoll);
     }
   }
 
@@ -547,11 +652,14 @@
     const winner = state.winner;
     const type = state.winType;
     const typeLabel = { single: 'almindeligt spil', gammon: 'gammon (dobbelt)', backgammon: 'backgammon (tredobbelt)' }[type];
-    const points = { single: 1, gammon: 2, backgammon: 3 }[type];
+    const baseline = { single: 1, gammon: 2, backgammon: 3 }[type];
+    const points = baseline * (cubeEnabled ? cubeValue : 1);
     scoreboard[winner] += points;
     saveScoreboard();
     winTitle.textContent = `${PLAYER_LABEL[winner]} vinder!`;
-    winDetail.textContent = `Sejr ved ${typeLabel} (+${points} point).`;
+    const cubeNote = cubeEnabled && cubeValue > 1 ? ` med terningen på ${cubeValue}` : '';
+    winDetail.textContent = `Sejr ved ${typeLabel}${cubeNote} (+${points} point).`;
+    updateWinScoreStanding();
     renderAll();
     winDialog.classList.remove('hidden');
   }
@@ -785,6 +893,17 @@
     pipWhite.textContent = R.pipCount(state, 'white');
     pipBlack.textContent = R.pipCount(state, 'black');
 
+    cubeBlock.classList.toggle('hidden', !cubeEnabled);
+    if (cubeEnabled) {
+      cubeDisplay.textContent = String(cubeValue);
+      cubeDisplay.classList.toggle('centered', cubeOwner === null);
+      // A double can only be offered before rolling, on your own turn, and only by
+      // whoever currently owns the cube (or by either player while it's centered).
+      const canOfferDouble = !state.winner && isHumanTurn() && state.originalRoll.length === 0
+        && (cubeOwner === null || cubeOwner === state.turn);
+      btnDouble.disabled = !canOfferDouble;
+    }
+
     // A finished game has nothing left to resume; a game in progress is saved
     // after every change so it can always be picked back up later.
     if (state.winner) clearSavedGame(); else saveGame();
@@ -798,6 +917,9 @@
     difficulty = saved.difficulty || 'normal';
     humanPlayer = saved.humanPlayer || 'white';
     state = saved.state;
+    cubeEnabled = !!saved.cubeEnabled;
+    cubeValue = saved.cubeValue || 1;
+    cubeOwner = saved.cubeOwner || null;
     selectedSource = null;
     undoStack = [];
     messageLog.innerHTML = '';
@@ -822,7 +944,7 @@
       // The computer's own roll/move loop was interrupted by the reload - restart
       // it from wherever the saved dice/state left off.
       if (state.dice.length === 0) {
-        setTimeout(rollForAI, speedTimings().beforeAiRoll);
+        setTimeout(aiTurnStart, speedTimings().beforeAiRoll);
       } else {
         setTimeout(aiTakeTurn, speedTimings().beforeAiTurn);
       }
