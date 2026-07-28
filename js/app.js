@@ -198,12 +198,34 @@
   }
 
   // ---- Dice-cup roll flourish: shake a cup (tinted to whoever's rolling), tip it out,
-  // let the dice tumble through random faces briefly, then hand off to the real roll. ----
-  function runDiceTumble(onDone) {
+  // and have the dice actually roll out of it - sliding from the cup's position to their
+  // resting spot while tumbling through random faces - then hand off to the real roll. ----
+  function runDiceTumble(fromRect, onDone) {
     const timing = DICE_ROLL_TIMING[aiSpeed];
     diceDisplay.innerHTML = '';
     const tumblers = [document.createElement('div'), document.createElement('div')];
-    tumblers.forEach((d) => { d.className = 'die'; d.textContent = '1'; diceDisplay.appendChild(d); });
+    tumblers.forEach((d) => { d.className = 'die tumbling-in'; d.textContent = '1'; diceDisplay.appendChild(d); });
+
+    if (fromRect && !prefersReducedMotion) {
+      // FLIP: place each die at the cup's position first, then let it transition to its
+      // natural resting spot in the dice display - i.e. rolling out of the cup.
+      const travelMs = timing.pourMs + timing.tickMs * timing.ticks;
+      tumblers.forEach((el) => {
+        const toRect = el.getBoundingClientRect();
+        const dx = (fromRect.left + fromRect.width / 2) - (toRect.left + toRect.width / 2);
+        const dy = (fromRect.top + fromRect.height / 2) - (toRect.top + toRect.height / 2);
+        el.style.transition = 'none';
+        el.style.transform = `translate(${dx}px, ${dy}px) scale(0.55)`;
+      });
+      void diceDisplay.offsetWidth; // force reflow so the "from" transform applies before animating away
+      requestAnimationFrame(() => {
+        tumblers.forEach((el, i) => {
+          el.style.transition = `transform ${travelMs}ms cubic-bezier(.16,.8,.3,1) ${i * 40}ms`;
+          el.style.transform = '';
+        });
+      });
+    }
+
     let ticks = 0;
     const tick = setInterval(() => {
       tumblers.forEach((d) => { d.textContent = String(1 + Math.floor(Math.random() * 6)); });
@@ -219,7 +241,7 @@
     if (prefersReducedMotion) { onDone(); return; }
     const timing = DICE_ROLL_TIMING[aiSpeed];
     // The cup (btn-roll) stays visible throughout - it shakes and tips in place,
-    // never swapping with the dice, which sit beside it the whole time.
+    // never swapping with the dice, which roll out of it into the dice display.
     btnRoll.classList.remove('shaking', 'pouring');
     btnRoll.style.animationDuration = timing.shakeMs + 'ms';
     void btnRoll.offsetWidth; // ensure the animation class re-triggers even if the same one was just used
@@ -228,9 +250,12 @@
       btnRoll.classList.remove('shaking');
       btnRoll.style.animationDuration = timing.pourMs + 'ms';
       btnRoll.classList.add('pouring');
+      const cupRect = btnRoll.getBoundingClientRect();
+      // Start the dice rolling out the moment the cup begins tipping, rather than
+      // waiting for the tip to finish first.
+      runDiceTumble(cupRect, onDone);
       setTimeout(() => {
         btnRoll.classList.remove('pouring');
-        runDiceTumble(onDone);
       }, timing.pourMs);
     }, timing.shakeMs);
   }

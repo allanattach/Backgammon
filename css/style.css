@@ -155,6 +155,7 @@ body {
   width: 34px; height: 34px; border-radius: 8px;
   background: #fff; color: #111; display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 1.05rem; box-shadow: inset 0 0 0 2px #ccc; flex-shrink: 0;
+  will-change: transform;
 }
 .die.used { opacity: 0.3; text-decoration: line-through; }
 .die.settling { animation: die-settle 0.32s cubic-bezier(.34,1.56,.64,1); }
