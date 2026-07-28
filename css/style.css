@@ -190,9 +190,18 @@ body {
   filter: brightness(1.18);
   box-shadow: 0 1px 2px rgba(0,0,0,0.35);
 }
-.dice-cup-btn.turn-white { background: var(--white-checker); }
-.dice-cup-btn.turn-black { background: var(--black-checker); }
-.dice-cup-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.dice-cup-btn.turn-white {
+  background: radial-gradient(circle at 35% 25%, #fff, var(--white-checker));
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+}
+.dice-cup-btn.turn-black {
+  /* A flat --black-checker fill is nearly invisible against the (also dark) panel
+     background - the lighter highlight blob plus an outer glow give it a silhouette. */
+  background: radial-gradient(circle at 35% 25%, #55555c, var(--black-checker));
+  filter: drop-shadow(0 0 3px rgba(255,255,255,0.3)) drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+}
+.dice-cup-btn.turn-white:hover:not(:disabled) { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4)) brightness(1.1); }
+.dice-cup-btn.turn-black:hover:not(:disabled) { filter: drop-shadow(0 0 4px rgba(255,255,255,0.4)) drop-shadow(0 1px 3px rgba(0,0,0,0.5)) brightness(1.15); }
 .dice-cup-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .dice-cup-btn.shaking { animation: cup-shake 0.48s ease-in-out; }
 .dice-cup-btn.pouring { animation: cup-pour 0.2s ease-in forwards; }
