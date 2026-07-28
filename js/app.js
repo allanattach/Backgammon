@@ -11,6 +11,8 @@
   const boardEl = document.getElementById('board');
   const turnText = document.getElementById('turn-text');
   const diceDisplay = document.getElementById('dice-display');
+  const diceCupWrap = document.getElementById('dice-cup-wrap');
+  const diceCup = document.getElementById('dice-cup');
   const btnRoll = document.getElementById('btn-roll');
   const btnUndo = document.getElementById('btn-undo');
   const btnEndTurn = document.getElementById('btn-end-turn');
@@ -54,6 +56,13 @@
     slow: { beforeAiTurn: 1800, betweenMoves: 2600, afterSequence: 1800, beforeAiRoll: 1800 },
     normal: { beforeAiTurn: 550, betweenMoves: 450, afterSequence: 500, beforeAiRoll: 500 },
     fast: { beforeAiTurn: 150, betweenMoves: 130, afterSequence: 150, beforeAiRoll: 150 },
+  };
+  // Dice-cup roll flourish (shake / pour / tumble-to-rest), scaled with the same
+  // speed setting so "Hurtig" stays snappy and "Langsom" gets the fuller show.
+  const DICE_ROLL_TIMING = {
+    slow: { shakeMs: 780, pourMs: 260, tickMs: 90, ticks: 9 },
+    normal: { shakeMs: 480, pourMs: 200, tickMs: 65, ticks: 7 },
+    fast: { shakeMs: 220, pourMs: 120, tickMs: 45, ticks: 4 },
   };
   let aiSpeed = loadSpeed();
 
@@ -188,6 +197,47 @@
       const cleanup = () => { el.style.transition = ''; el.removeEventListener('transitionend', cleanup); };
       el.addEventListener('transitionend', cleanup);
     });
+  }
+
+  // ---- Dice-cup roll flourish: shake a cup (tinted to whoever's rolling), tip it out,
+  // let the dice tumble through random faces briefly, then hand off to the real roll. ----
+  function runDiceTumble(onDone) {
+    const timing = DICE_ROLL_TIMING[aiSpeed];
+    diceDisplay.innerHTML = '';
+    const tumblers = [document.createElement('div'), document.createElement('div')];
+    tumblers.forEach((d) => { d.className = 'die'; d.textContent = '1'; diceDisplay.appendChild(d); });
+    let ticks = 0;
+    const tick = setInterval(() => {
+      tumblers.forEach((d) => { d.textContent = String(1 + Math.floor(Math.random() * 6)); });
+      ticks += 1;
+      if (ticks >= timing.ticks) {
+        clearInterval(tick);
+        onDone();
+      }
+    }, timing.tickMs);
+  }
+
+  function animateDiceRoll(player, onDone) {
+    if (prefersReducedMotion) { onDone(); return; }
+    const timing = DICE_ROLL_TIMING[aiSpeed];
+    diceCup.classList.remove('turn-white', 'turn-black', 'shaking', 'pouring');
+    diceCup.classList.add(player === 'white' ? 'turn-white' : 'turn-black');
+    diceCup.style.animationDuration = timing.shakeMs + 'ms';
+    diceCupWrap.classList.remove('hidden');
+    diceDisplay.classList.add('hidden');
+    void diceCup.offsetWidth; // ensure the animation class re-triggers even if the same one was just used
+    diceCup.classList.add('shaking');
+    setTimeout(() => {
+      diceCup.classList.remove('shaking');
+      diceCup.style.animationDuration = timing.pourMs + 'ms';
+      diceCup.classList.add('pouring');
+      setTimeout(() => {
+        diceCupWrap.classList.add('hidden');
+        diceCup.classList.remove('pouring');
+        diceDisplay.classList.remove('hidden');
+        runDiceTumble(onDone);
+      }, timing.pourMs);
+    }, timing.shakeMs);
   }
 
   /** Capture the pre-move DOM positions needed to animate this move, before state changes. */
@@ -389,18 +439,37 @@
     }
   }
 
+  function settleDiceFaces() {
+    diceDisplay.querySelectorAll('.die').forEach((d) => {
+      d.classList.add('settling');
+      d.addEventListener('animationend', function cleanup() {
+        d.classList.remove('settling');
+        d.removeEventListener('animationend', cleanup);
+      });
+    });
+  }
+
   function rollForAI() {
-    const roll = R.rollDice();
-    state = R.startTurn(state, state.turn, roll);
-    afterDiceRolled();
+    const player = state.turn;
+    animateDiceRoll(player, () => {
+      const roll = R.rollDice();
+      state = R.startTurn(state, player, roll);
+      afterDiceRolled();
+      settleDiceFaces();
+    });
   }
 
   btnRoll.addEventListener('click', () => {
     if (!isHumanTurn()) return;
-    const roll = R.rollDice();
-    state = R.startTurn(state, state.turn, roll);
-    log(`${PLAYER_LABEL[state.turn]} slog ${roll.join('-')}.`, 'info');
-    afterDiceRolled();
+    btnRoll.disabled = true;
+    const player = state.turn;
+    animateDiceRoll(player, () => {
+      const roll = R.rollDice();
+      state = R.startTurn(state, player, roll);
+      log(`${PLAYER_LABEL[state.turn]} slog ${roll.join('-')}.`, 'info');
+      afterDiceRolled();
+      settleDiceFaces();
+    });
   });
 
   btnEndTurn.addEventListener('click', endTurn);
