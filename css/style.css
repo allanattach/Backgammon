@@ -172,6 +172,53 @@ body {
   font-weight: 800; font-size: 1.05rem; box-shadow: inset 0 0 0 2px #ccc; flex-shrink: 0;
 }
 .die.used { opacity: 0.3; text-decoration: line-through; }
+.die.settling { animation: die-settle 0.32s cubic-bezier(.34,1.56,.64,1); }
+
+/* Dice cup ("raslebæger"): a simple flat-shaded tumbler, tinted to match whichever
+   colour is on move (same tokens as the roll button) so it's obvious whose roll it is. */
+.dice-cup-wrap { display: flex; align-items: center; justify-content: center; min-height: 60px; margin-bottom: 0.3rem; }
+.dice-cup {
+  position: relative;
+  width: 50px;
+  height: 56px;
+  clip-path: polygon(12% 0%, 88% 0%, 76% 100%, 24% 100%);
+  border-radius: 3px;
+  box-shadow: inset -7px 0 10px rgba(0,0,0,0.18), inset 7px 0 10px rgba(255,255,255,0.12);
+  transform-origin: 50% 85%;
+}
+.dice-cup::before {
+  content: '';
+  position: absolute;
+  top: -5px; left: 8%; right: 8%;
+  height: 9px;
+  border-radius: 50%;
+  filter: brightness(1.18);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35);
+}
+.dice-cup.turn-white, .dice-cup.turn-white::before { background: var(--white-checker); }
+.dice-cup.turn-black, .dice-cup.turn-black::before { background: var(--black-checker); }
+.dice-cup.shaking { animation: cup-shake 0.48s ease-in-out; }
+.dice-cup.pouring { animation: cup-pour 0.2s ease-in forwards; }
+
+@keyframes cup-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  12% { transform: translateX(-7px) rotate(-10deg); }
+  24% { transform: translateX(7px) rotate(10deg); }
+  36% { transform: translateX(-6px) rotate(-8deg); }
+  48% { transform: translateX(6px) rotate(8deg); }
+  60% { transform: translateX(-4px) rotate(-5deg); }
+  72% { transform: translateX(4px) rotate(5deg); }
+  84% { transform: translateX(-2px) rotate(-2deg); }
+}
+@keyframes cup-pour {
+  0% { transform: rotate(0deg) translateY(0); }
+  100% { transform: rotate(62deg) translateY(4px); }
+}
+@keyframes die-settle {
+  0% { transform: scale(1.35) rotate(-6deg); }
+  55% { transform: scale(0.9) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
 
 .actions-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .actions-row .btn { flex: 1 1 auto; font-size: 0.78rem; padding: 0.45rem 0.4rem; white-space: nowrap; }
