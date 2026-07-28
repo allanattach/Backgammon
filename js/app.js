@@ -25,10 +25,8 @@
   const winDetail = document.getElementById('win-detail');
   const rulesModal = document.getElementById('rules-modal');
   const rulesContent = document.getElementById('rules-content');
-  const speedRow = document.getElementById('speed-row');
   const speedSlider = document.getElementById('speed-slider');
   const speedSliderLabel = document.getElementById('speed-slider-label');
-  const liveSpeedRow = document.getElementById('live-speed-row');
   const liveSpeedSlider = document.getElementById('live-speed-slider');
   const liveSpeedLabel = document.getElementById('live-speed-label');
   const autoEndTurnToggle = document.getElementById('auto-end-turn-toggle');
@@ -297,7 +295,6 @@
       btn.classList.add('selected');
       mode = btn.dataset.mode;
       document.getElementById('difficulty-row').classList.toggle('hidden', mode !== 'pvc');
-      speedRow.classList.toggle('hidden', mode !== 'pvc');
       document.getElementById('btn-start').disabled = false;
     });
   });
@@ -307,7 +304,6 @@
       const sel = document.querySelector('input[name="difficulty"]:checked');
       difficulty = sel ? sel.value : 'normal';
     }
-    liveSpeedRow.classList.toggle('hidden', mode !== 'pvc');
     startScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     beginNewGame();

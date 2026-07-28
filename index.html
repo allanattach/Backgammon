@@ -45,10 +45,10 @@
           <label><input type="radio" name="difficulty" value="easy" /> Let</label>
           <label><input type="radio" name="difficulty" value="normal" checked /> Normal</label>
         </div>
-        <div id="speed-row" class="speed-slider-row hidden">
-          <span>Tempo for computerens træk: <strong id="speed-slider-label">Normal</strong></span>
+        <div id="speed-row" class="speed-slider-row">
+          <span>Tempo (terningeslag og træk): <strong id="speed-slider-label">Normal</strong></span>
           <input type="range" id="speed-slider" class="speed-slider" min="0" max="2" step="1" value="1"
-                 aria-label="Tempo for computerens træk" />
+                 aria-label="Tempo for terningeslag og træk" />
           <div class="speed-slider-ticks"><span>Langsom</span><span>Normal</span><span>Hurtig</span></div>
         </div>
         <button id="btn-start" class="btn btn-primary" type="button" disabled>Start spil</button>
@@ -83,10 +83,10 @@
               <input type="checkbox" id="auto-end-turn-toggle" />
               Afslut tur automatisk, når slagene er brugt
             </label>
-            <div id="live-speed-row" class="speed-slider-row compact hidden">
+            <div id="live-speed-row" class="speed-slider-row compact">
               <span>Tempo: <strong id="live-speed-label">Normal</strong></span>
               <input type="range" id="live-speed-slider" class="speed-slider" min="0" max="2" step="1" value="1"
-                     aria-label="Computerens tempo" />
+                     aria-label="Tempo for terningeslag og træk" />
             </div>
           </div>
           <div class="panel-block">
