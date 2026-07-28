@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__pull_request_read",
+      "Bash(curl -s -o /dev/null -w *)",
+      "Bash(node --test /home/user/Backgammon/test/rules-engine.test.js *)"
+    ]
+  }
+}
