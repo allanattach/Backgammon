@@ -68,21 +68,6 @@ body {
 .btn-primary:hover:not(:disabled) { background: var(--accent); }
 .btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
 
-/* Roll-dice button is tinted to match whichever colour is on move, so in 2-player mode
-   it's immediately obvious whose turn it is without reading the text label. */
-#btn-roll.turn-white {
-  background: var(--white-checker);
-  border-color: var(--white-checker-edge);
-  color: #2a2a2e;
-}
-#btn-roll.turn-white:hover:not(:disabled) { background: #fff; }
-#btn-roll.turn-black {
-  background: var(--black-checker);
-  border-color: #000;
-  color: var(--white-checker);
-}
-#btn-roll.turn-black:hover:not(:disabled) { background: #3a3a3e; }
-
 #app {
   flex: 1 1 auto;
   min-height: 0;
@@ -174,31 +159,43 @@ body {
 .die.used { opacity: 0.3; text-decoration: line-through; }
 .die.settling { animation: die-settle 0.32s cubic-bezier(.34,1.56,.64,1); }
 
-/* Dice cup ("raslebæger"): a simple flat-shaded tumbler, tinted to match whichever
-   colour is on move (same tokens as the roll button) so it's obvious whose roll it is. */
-.dice-cup-wrap { display: flex; align-items: center; justify-content: center; min-height: 60px; margin-bottom: 0.3rem; }
-.dice-cup {
+/* Dice cup ("raslebæger"): IS the roll button, always visible (not just a transient
+   overlay) - a simple flat-shaded tumbler tinted to whichever colour is on move, sitting
+   next to the dice rather than swapping places with them. */
+.dice-roll-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+.dice-cup-btn {
   position: relative;
-  width: 50px;
-  height: 56px;
+  flex-shrink: 0;
+  width: 46px;
+  height: 52px;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
   clip-path: polygon(12% 0%, 88% 0%, 76% 100%, 24% 100%);
   border-radius: 3px;
   box-shadow: inset -7px 0 10px rgba(0,0,0,0.18), inset 7px 0 10px rgba(255,255,255,0.12);
   transform-origin: 50% 85%;
+  transition: filter 0.15s, opacity 0.15s;
+  background: var(--white-checker);
 }
-.dice-cup::before {
+.dice-cup-btn::before {
   content: '';
   position: absolute;
   top: -5px; left: 8%; right: 8%;
   height: 9px;
+  background: inherit;
   border-radius: 50%;
   filter: brightness(1.18);
   box-shadow: 0 1px 2px rgba(0,0,0,0.35);
 }
-.dice-cup.turn-white, .dice-cup.turn-white::before { background: var(--white-checker); }
-.dice-cup.turn-black, .dice-cup.turn-black::before { background: var(--black-checker); }
-.dice-cup.shaking { animation: cup-shake 0.48s ease-in-out; }
-.dice-cup.pouring { animation: cup-pour 0.2s ease-in forwards; }
+.dice-cup-btn.turn-white { background: var(--white-checker); }
+.dice-cup-btn.turn-black { background: var(--black-checker); }
+.dice-cup-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.dice-cup-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dice-cup-btn.shaking { animation: cup-shake 0.48s ease-in-out; }
+.dice-cup-btn.pouring { animation: cup-pour 0.2s ease-in forwards; }
+.dice-roll-row .dice-display { margin-bottom: 0; }
 
 @keyframes cup-shake {
   0%, 100% { transform: translateX(0) rotate(0deg); }

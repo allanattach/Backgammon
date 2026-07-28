@@ -11,9 +11,7 @@
   const boardEl = document.getElementById('board');
   const turnText = document.getElementById('turn-text');
   const diceDisplay = document.getElementById('dice-display');
-  const diceCupWrap = document.getElementById('dice-cup-wrap');
-  const diceCup = document.getElementById('dice-cup');
-  const btnRoll = document.getElementById('btn-roll');
+  const btnRoll = document.getElementById('btn-roll'); // the dice cup itself is the roll button
   const btnUndo = document.getElementById('btn-undo');
   const btnEndTurn = document.getElementById('btn-end-turn');
   const scoreWhite = document.getElementById('score-white');
@@ -220,21 +218,18 @@
   function animateDiceRoll(player, onDone) {
     if (prefersReducedMotion) { onDone(); return; }
     const timing = DICE_ROLL_TIMING[aiSpeed];
-    diceCup.classList.remove('turn-white', 'turn-black', 'shaking', 'pouring');
-    diceCup.classList.add(player === 'white' ? 'turn-white' : 'turn-black');
-    diceCup.style.animationDuration = timing.shakeMs + 'ms';
-    diceCupWrap.classList.remove('hidden');
-    diceDisplay.classList.add('hidden');
-    void diceCup.offsetWidth; // ensure the animation class re-triggers even if the same one was just used
-    diceCup.classList.add('shaking');
+    // The cup (btn-roll) stays visible throughout - it shakes and tips in place,
+    // never swapping with the dice, which sit beside it the whole time.
+    btnRoll.classList.remove('shaking', 'pouring');
+    btnRoll.style.animationDuration = timing.shakeMs + 'ms';
+    void btnRoll.offsetWidth; // ensure the animation class re-triggers even if the same one was just used
+    btnRoll.classList.add('shaking');
     setTimeout(() => {
-      diceCup.classList.remove('shaking');
-      diceCup.style.animationDuration = timing.pourMs + 'ms';
-      diceCup.classList.add('pouring');
+      btnRoll.classList.remove('shaking');
+      btnRoll.style.animationDuration = timing.pourMs + 'ms';
+      btnRoll.classList.add('pouring');
       setTimeout(() => {
-        diceCupWrap.classList.add('hidden');
-        diceCup.classList.remove('pouring');
-        diceDisplay.classList.remove('hidden');
+        btnRoll.classList.remove('pouring');
         runDiceTumble(onDone);
       }, timing.pourMs);
     }, timing.shakeMs);
