@@ -4,6 +4,10 @@
   const AI = window.BgAI;
 
   const PLAYER_LABEL = { white: 'Hvid', black: 'Sort' };
+  // Standard die pip layouts (⚀-⚅) are rotationally symmetric, unlike digits (a "6"
+  // upside down is ambiguous with "9") - shown instead of numbers so the dice stay
+  // legible from either side of a shared, flat tablet in 2-player hotseat play.
+  const DIE_FACES = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
 
   // ---- DOM refs ----
   const startScreen = document.getElementById('start-screen');
@@ -11,6 +15,7 @@
   const boardEl = document.getElementById('board');
   const turnText = document.getElementById('turn-text');
   const diceDisplay = document.getElementById('dice-display');
+  const diceRollRow = document.getElementById('dice-roll-row');
   const btnRoll = document.getElementById('btn-roll'); // the dice cup itself is the roll button
   const btnUndo = document.getElementById('btn-undo');
   const btnEndTurn = document.getElementById('btn-end-turn');
@@ -33,6 +38,7 @@
   const autoEndTurnToggle = document.getElementById('auto-end-turn-toggle');
   const cubeEnabledToggle = document.getElementById('cube-enabled-toggle');
   const cubeBlock = document.getElementById('cube-block');
+  const cubeRow = document.getElementById('cube-row');
   const cubeDisplay = document.getElementById('cube-display');
   const btnDouble = document.getElementById('btn-double');
   const doubleModal = document.getElementById('double-modal');
@@ -329,7 +335,7 @@
     const timing = DICE_ROLL_TIMING[aiSpeed];
     diceDisplay.innerHTML = '';
     const tumblers = [document.createElement('div'), document.createElement('div')];
-    tumblers.forEach((d) => { d.className = 'die tumbling-in'; d.textContent = '1'; diceDisplay.appendChild(d); });
+    tumblers.forEach((d) => { d.className = 'die tumbling-in'; d.textContent = DIE_FACES[1]; diceDisplay.appendChild(d); });
 
     if (fromRect && !prefersReducedMotion) {
       // FLIP: place each die at the cup's position first, then let it transition to its
@@ -353,7 +359,7 @@
 
     let ticks = 0;
     const tick = setInterval(() => {
-      tumblers.forEach((d) => { d.textContent = String(1 + Math.floor(Math.random() * 6)); });
+      tumblers.forEach((d) => { d.textContent = DIE_FACES[1 + Math.floor(Math.random() * 6)]; });
       ticks += 1;
       if (ticks >= timing.ticks) {
         clearInterval(tick);
@@ -878,10 +884,17 @@
         if (!used) remainingPool.splice(poolIdx, 1);
         const die = document.createElement('div');
         die.className = 'die' + (used ? ' used' : '');
-        die.textContent = val;
+        die.textContent = DIE_FACES[val];
         diceDisplay.appendChild(die);
       });
     }
+
+    // 2-player hotseat: rotate the cup+dice and the cube 180° on the far player's
+    // turn, so a shared flat tablet reads correctly from whichever side they're
+    // sitting on. Not applicable against the computer - the human always sits put.
+    const flipForTurn = mode === 'pvp' && state.turn === 'black';
+    diceRollRow.classList.toggle('flipped', flipForTurn);
+    cubeRow.classList.toggle('flipped', flipForTurn);
 
     // Only re-enable rolling once the turn has actually ended (endTurn() clears
     // originalRoll) — using state.dice.length here would re-enable the button the
