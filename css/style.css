@@ -158,7 +158,7 @@ body {
 .die {
   width: 34px; height: 34px; border-radius: 8px;
   background: #fff; color: #111; display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 1.05rem; box-shadow: inset 0 0 0 2px #ccc; flex-shrink: 0;
+  font-size: 1.7rem; line-height: 1; box-shadow: inset 0 0 0 2px #ccc; flex-shrink: 0;
   will-change: transform;
 }
 .die.used { opacity: 0.3; text-decoration: line-through; }
@@ -167,7 +167,7 @@ body {
 /* Dice cup ("raslebæger"): IS the roll button, always visible (not just a transient
    overlay) - a simple flat-shaded tumbler tinted to whichever colour is on move, sitting
    next to the dice rather than swapping places with them. */
-.dice-roll-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+.dice-roll-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; transition: transform 0.35s ease; }
 .dice-cup-btn {
   /* Without this, mobile Chromium can render native button chrome underneath
      the custom trapezoid background. Buttons also default to `appearance:auto`. */
@@ -240,7 +240,7 @@ body {
 /* Doubling cube: a flat square (deliberately distinct from the round dice) showing
    the current stake multiplier, dashed while centered (nobody owns it yet) and
    solid once a player owns the right to the next double. */
-.cube-row { display: flex; align-items: center; gap: 0.6rem; }
+.cube-row { display: flex; align-items: center; gap: 0.6rem; transition: transform 0.35s ease; }
 .cube-display {
   width: 40px; height: 40px; flex-shrink: 0;
   border-radius: 6px;
@@ -252,6 +252,16 @@ body {
 }
 .cube-display.centered { border-style: dashed; border-color: var(--text-dim); opacity: 0.8; }
 .cube-row .btn { flex: 1 1 auto; font-size: 0.8rem; }
+
+/* 2-player hotseat: whichever player is NOT on the near side of a shared, flat
+   tablet views the screen from the opposite direction. Rotating the cup+dice and
+   the cube 180° for that player's turn makes them read correctly from where that
+   player is actually sitting - the dice already show pips rather than digits so
+   they're legible either way round regardless of this flip. */
+.dice-roll-row.flipped, .cube-row.flipped { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .dice-roll-row, .cube-row { transition: none; }
+}
 
 @keyframes cup-shake {
   0%, 100% { transform: translateX(0) rotate(0deg); }
