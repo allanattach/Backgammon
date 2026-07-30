@@ -2,6 +2,16 @@
 <html lang="da">
 <head>
 <meta charset="utf-8" />
+<script>
+  // Applied before the stylesheet renders anything, so a saved light/dark
+  // choice takes effect immediately instead of flashing the default theme.
+  (function () {
+    try {
+      var t = localStorage.getItem('bg_theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* ignore */ }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Backgammon</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%234a2f22'/%3E%3Ccircle cx='35' cy='50' r='22' fill='%23f4f0e6'/%3E%3Ccircle cx='65' cy='50' r='22' fill='%232a2a2e'/%3E%3C/svg%3E" />
@@ -18,6 +28,11 @@
   <header class="topbar">
     <h1>Backgammon</h1>
     <div class="topbar-actions">
+      <select id="theme-select" class="btn btn-ghost theme-select" aria-label="Tema" title="Tema">
+        <option value="system">Enhedens tema</option>
+        <option value="light">Lyst tema</option>
+        <option value="dark">Mørkt tema</option>
+      </select>
       <button id="btn-rules" class="btn btn-ghost" type="button">Reglerne</button>
       <button id="btn-new-game" class="btn btn-ghost" type="button">Nyt spil</button>
       <button id="btn-fullscreen" class="btn btn-ghost btn-icon" type="button" aria-label="Fuld skærm" title="Fuld skærm">⛶</button>
