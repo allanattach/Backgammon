@@ -45,54 +45,56 @@
   const doubleOfferText = document.getElementById('double-offer-text');
   const btnDoubleAccept = document.getElementById('btn-double-accept');
   const btnDoubleDecline = document.getElementById('btn-double-decline');
-  const themeSelect = document.getElementById('theme-select');
+  const btnTheme = document.getElementById('btn-theme');
   const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 
   rulesContent.innerHTML = window.BgRulesText;
 
-  // ---- Theme: dark, light, or follow the device setting ----
-  // The actual colour swap happens in CSS via the [data-theme] attribute (see
-  // style.css); index.html also applies a saved choice before first paint so
-  // there's no flash of the wrong theme. This just keeps the dropdown, the
-  // storage, and the mobile browser-chrome tint (<meta theme-color>) in sync.
-  function loadTheme() {
+  // ---- Theme: one icon button cycling "følg enheden" -> lyst -> mørkt ----
+  // Same approach as the Yatzy project's js/theme.js: the stored value is the
+  // *preference* (which may be "system"), while data-theme on <html> always
+  // carries the concrete *resolved* light/dark value, so style.css never has
+  // to know about "system" - and index.html's head script resolves it the
+  // same way before first paint, so there's no flash of the wrong theme.
+  const THEME_MODES = ['system', 'light', 'dark'];
+  const THEME_LABELS = { system: 'Tema: følger enheden', light: 'Tema: lyst', dark: 'Tema: mørkt' };
+  const THEME_GLYPHS = { system: '◐', light: '☀', dark: '☾' };
+  const THEME_COLOR_META = { light: '#f2efe8', dark: '#1b1f27' };
+
+  function loadThemePreference() {
     try {
       const v = localStorage.getItem('bg_theme');
-      if (v === 'light' || v === 'dark' || v === 'system') return v;
+      if (THEME_MODES.includes(v)) return v;
     } catch (e) { /* ignore */ }
     return 'system';
   }
-  function saveTheme(v) {
+  function saveThemePreference(v) {
     try { localStorage.setItem('bg_theme', v); } catch (e) { /* ignore */ }
   }
   const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)');
-  function updateThemeColorMeta(theme) {
-    if (!themeColorMeta) return;
-    const effectiveLight = theme === 'light' || (theme === 'system' && systemPrefersLight && systemPrefersLight.matches);
-    themeColorMeta.setAttribute('content', effectiveLight ? '#f2efe8' : '#1b1f27');
+  function resolveTheme(preference) {
+    if (preference === 'light' || preference === 'dark') return preference;
+    return systemPrefersLight && systemPrefersLight.matches ? 'light' : 'dark';
   }
-  function applyTheme(theme) {
-    if (theme === 'system') {
-      document.documentElement.removeAttribute('data-theme');
-    } else {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-    updateThemeColorMeta(theme);
+  let themePreference = loadThemePreference();
+  function refreshTheme() {
+    const resolved = resolveTheme(themePreference);
+    document.documentElement.dataset.theme = resolved;
+    if (themeColorMeta) themeColorMeta.setAttribute('content', THEME_COLOR_META[resolved]);
+    btnTheme.textContent = THEME_GLYPHS[themePreference];
+    btnTheme.setAttribute('aria-label', THEME_LABELS[themePreference]);
+    btnTheme.title = THEME_LABELS[themePreference];
   }
-  let theme = loadTheme();
-  themeSelect.value = theme;
-  applyTheme(theme);
-  themeSelect.addEventListener('change', () => {
-    theme = themeSelect.value;
-    saveTheme(theme);
-    applyTheme(theme);
+  refreshTheme();
+  btnTheme.addEventListener('click', () => {
+    themePreference = THEME_MODES[(THEME_MODES.indexOf(themePreference) + 1) % THEME_MODES.length];
+    saveThemePreference(themePreference);
+    refreshTheme();
   });
-  // Keep the browser-chrome tint correct if the OS theme changes live while
-  // "Enhedens tema" (follow device) is selected - the page colours themselves
-  // already update on their own via the CSS media query.
+  // Follow the device live, but only while "følger enheden" is what was asked for.
   if (systemPrefersLight && systemPrefersLight.addEventListener) {
     systemPrefersLight.addEventListener('change', () => {
-      if (theme === 'system') updateThemeColorMeta(theme);
+      if (themePreference === 'system') refreshTheme();
     });
   }
 
