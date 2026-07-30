@@ -1,4 +1,7 @@
 :root {
+  /* Dark theme (default). Board/felt/checker/dice colours are deliberately NOT
+     part of the theme - a physical board looks the same regardless of "app
+     theme", so only page chrome (backgrounds, panels, text) changes below. */
   --bg: #1b1f27;
   --panel-bg: #232833;
   --panel-border: #333a48;
@@ -6,6 +9,11 @@
   --text-dim: #a3acbf;
   --accent: #e0a030;
   --accent-dim: #a3762a;
+  --btn-hover-bg: #2c3342;
+  --mode-btn-bg: #1a1e27;
+  --mode-btn-selected-bg: #2a2417;
+  --white-turn-text: #f4f0e6;
+  --black-turn-text: #cfd3dc;
   --board-frame: #4a2f22;
   --board-felt: #0f4a3c;
   --point-a: #d9b98a;
@@ -16,7 +24,44 @@
   --black-checker-edge: #000;
   --danger: #d9534f;
   --ok: #4caf7d;
+  color-scheme: dark;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Light theme: applies when explicitly chosen (data-theme="light"), or when
+   following the device setting (no data-theme attribute) and the OS/browser
+   itself is set to light. */
+:root[data-theme="light"] {
+  --bg: #f2efe8;
+  --panel-bg: #ffffff;
+  --panel-border: #ddd7c8;
+  --text: #23242a;
+  --text-dim: #6b6f78;
+  --accent: #b5762a;
+  --accent-dim: #8c5c1f;
+  --btn-hover-bg: #ece7d9;
+  --mode-btn-bg: #f6f3ea;
+  --mode-btn-selected-bg: #fbe9c8;
+  --white-turn-text: #8a7040;
+  --black-turn-text: #2a2a2e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f2efe8;
+    --panel-bg: #ffffff;
+    --panel-border: #ddd7c8;
+    --text: #23242a;
+    --text-dim: #6b6f78;
+    --accent: #b5762a;
+    --accent-dim: #8c5c1f;
+    --btn-hover-bg: #ece7d9;
+    --mode-btn-bg: #f6f3ea;
+    --mode-btn-selected-bg: #fbe9c8;
+    --white-turn-text: #8a7040;
+    --black-turn-text: #2a2a2e;
+    color-scheme: light;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -60,13 +105,25 @@ body {
   touch-action: manipulation;
   transition: background 0.15s, transform 0.05s;
 }
-.btn:hover:not(:disabled) { background: #2c3342; }
+.btn:hover:not(:disabled) { background: var(--btn-hover-bg); }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-ghost { background: transparent; }
 .btn-primary { background: var(--accent-dim); border-color: var(--accent); color: #fff; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: var(--accent); }
 .btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
+.theme-select {
+  /* A <select> doesn't take .btn's declarations for free (form controls opt out
+     of most inherited styling), so this repeats the bits that matter here. */
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.6rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%), linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+  background-position: calc(100% - 14px) center, calc(100% - 9px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 #app {
   flex: 1 1 auto;
@@ -98,7 +155,7 @@ body {
 .mode-options { display: flex; gap: 1rem; margin: 1.25rem 0; flex-wrap: wrap; }
 .mode-btn {
   flex: 1 1 180px;
-  background: #1a1e27;
+  background: var(--mode-btn-bg);
   border: 2px solid var(--panel-border);
   border-radius: 12px;
   padding: 1rem;
@@ -110,7 +167,7 @@ body {
   text-align: left;
 }
 .mode-btn:hover { border-color: var(--accent-dim); }
-.mode-btn.selected { border-color: var(--accent); background: #2a2417; }
+.mode-btn.selected { border-color: var(--accent); background: var(--mode-btn-selected-bg); }
 .mode-title { font-weight: 700; font-size: 1.05rem; }
 .mode-desc { font-size: 0.82rem; color: var(--text-dim); }
 .difficulty-row { display: flex; align-items: center; gap: 0.9rem; justify-content: center; margin-bottom: 1.25rem; font-size: 0.9rem; flex-wrap: wrap; }
@@ -151,8 +208,8 @@ body {
 }
 .panel-block h3 { margin: 0 0 0.4rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
 #turn-text { font-size: 1.05rem; font-weight: 700; }
-#turn-text.white-turn { color: var(--white-checker); }
-#turn-text.black-turn { color: #cfd3dc; }
+#turn-text.white-turn { color: var(--white-turn-text); }
+#turn-text.black-turn { color: var(--black-turn-text); }
 
 .dice-display { display: flex; gap: 0.4rem; min-height: 38px; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
 .die {

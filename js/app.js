@@ -45,8 +45,56 @@
   const doubleOfferText = document.getElementById('double-offer-text');
   const btnDoubleAccept = document.getElementById('btn-double-accept');
   const btnDoubleDecline = document.getElementById('btn-double-decline');
+  const themeSelect = document.getElementById('theme-select');
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 
   rulesContent.innerHTML = window.BgRulesText;
+
+  // ---- Theme: dark, light, or follow the device setting ----
+  // The actual colour swap happens in CSS via the [data-theme] attribute (see
+  // style.css); index.html also applies a saved choice before first paint so
+  // there's no flash of the wrong theme. This just keeps the dropdown, the
+  // storage, and the mobile browser-chrome tint (<meta theme-color>) in sync.
+  function loadTheme() {
+    try {
+      const v = localStorage.getItem('bg_theme');
+      if (v === 'light' || v === 'dark' || v === 'system') return v;
+    } catch (e) { /* ignore */ }
+    return 'system';
+  }
+  function saveTheme(v) {
+    try { localStorage.setItem('bg_theme', v); } catch (e) { /* ignore */ }
+  }
+  const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)');
+  function updateThemeColorMeta(theme) {
+    if (!themeColorMeta) return;
+    const effectiveLight = theme === 'light' || (theme === 'system' && systemPrefersLight && systemPrefersLight.matches);
+    themeColorMeta.setAttribute('content', effectiveLight ? '#f2efe8' : '#1b1f27');
+  }
+  function applyTheme(theme) {
+    if (theme === 'system') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    updateThemeColorMeta(theme);
+  }
+  let theme = loadTheme();
+  themeSelect.value = theme;
+  applyTheme(theme);
+  themeSelect.addEventListener('change', () => {
+    theme = themeSelect.value;
+    saveTheme(theme);
+    applyTheme(theme);
+  });
+  // Keep the browser-chrome tint correct if the OS theme changes live while
+  // "Enhedens tema" (follow device) is selected - the page colours themselves
+  // already update on their own via the CSS media query.
+  if (systemPrefersLight && systemPrefersLight.addEventListener) {
+    systemPrefersLight.addEventListener('change', () => {
+      if (theme === 'system') updateThemeColorMeta(theme);
+    });
+  }
 
   // ---- Session state ----
   let mode = null; // 'pvp' | 'pvc'
