@@ -3,13 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <script>
-  // Applied before the stylesheet renders anything, so a saved light/dark
-  // choice takes effect immediately instead of flashing the default theme.
+  // Applied before the stylesheet renders anything, so the resolved theme
+  // takes effect immediately instead of flashing the wrong one. Always
+  // resolves "follow device" down to a concrete light/dark value up front
+  // (same approach as the Yatzy project's theme.js), so the stylesheet only
+  // ever has to handle two states.
   (function () {
     try {
-      var t = localStorage.getItem('bg_theme');
-      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
-    } catch (e) { /* ignore */ }
+      var pref = localStorage.getItem('bg_theme');
+      var light = pref === 'light' ||
+        (pref !== 'dark' && window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: light)').matches);
+      document.documentElement.dataset.theme = light ? 'light' : 'dark';
+    } catch (e) {
+      document.documentElement.dataset.theme = 'dark';
+    }
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -28,11 +36,7 @@
   <header class="topbar">
     <h1>Backgammon</h1>
     <div class="topbar-actions">
-      <select id="theme-select" class="btn btn-ghost theme-select" aria-label="Tema" title="Tema">
-        <option value="system">Enhedens tema</option>
-        <option value="light">Lyst tema</option>
-        <option value="dark">Mørkt tema</option>
-      </select>
+      <button id="btn-theme" class="btn btn-ghost btn-icon" type="button" aria-label="Tema" title="Tema">◐</button>
       <button id="btn-rules" class="btn btn-ghost" type="button">Reglerne</button>
       <button id="btn-new-game" class="btn btn-ghost" type="button">Nyt spil</button>
       <button id="btn-fullscreen" class="btn btn-ghost btn-icon" type="button" aria-label="Fuld skærm" title="Fuld skærm">⛶</button>

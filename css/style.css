@@ -28,9 +28,10 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Light theme: applies when explicitly chosen (data-theme="light"), or when
-   following the device setting (no data-theme attribute) and the OS/browser
-   itself is set to light. */
+/* Light theme. The theme script (index.html head + js/app.js) always resolves
+   "follow device" down to a concrete light/dark value before first paint, so
+   this only ever needs to key off the explicit attribute - no media-query
+   fallback layer required (same approach as the Yatzy project's theme.js). */
 :root[data-theme="light"] {
   --bg: #f2efe8;
   --panel-bg: #ffffff;
@@ -45,23 +46,6 @@
   --white-turn-text: #8a7040;
   --black-turn-text: #2a2a2e;
   color-scheme: light;
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f2efe8;
-    --panel-bg: #ffffff;
-    --panel-border: #ddd7c8;
-    --text: #23242a;
-    --text-dim: #6b6f78;
-    --accent: #b5762a;
-    --accent-dim: #8c5c1f;
-    --btn-hover-bg: #ece7d9;
-    --mode-btn-bg: #f6f3ea;
-    --mode-btn-selected-bg: #fbe9c8;
-    --white-turn-text: #8a7040;
-    --black-turn-text: #2a2a2e;
-    color-scheme: light;
-  }
 }
 
 * { box-sizing: border-box; }
@@ -112,18 +96,6 @@ body {
 .btn-primary { background: var(--accent-dim); border-color: var(--accent); color: #fff; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: var(--accent); }
 .btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
-.theme-select {
-  /* A <select> doesn't take .btn's declarations for free (form controls opt out
-     of most inherited styling), so this repeats the bits that matter here. */
-  font-family: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 1.6rem;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%), linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
-  background-position: calc(100% - 14px) center, calc(100% - 9px) center;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-}
 
 #app {
   flex: 1 1 auto;
