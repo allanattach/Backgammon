@@ -56,6 +56,7 @@
   let selectedSource = null; // 'idx:N' | 'bar' | null
   let undoStack = [];
   let awaitingHumanInput = false;
+  let awaitingOpeningRoll = false; // true between "Start spil" and the cup being pressed
   let scoreboard = loadScoreboard();
 
   // How fast the computer's moves play out, so the moves stay watchable instead of
@@ -259,7 +260,7 @@
   function saveGame() {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        v: SAVE_VERSION, mode, difficulty, humanPlayer, state, cubeEnabled, cubeValue, cubeOwner,
+        v: SAVE_VERSION, mode, difficulty, humanPlayer, state, cubeEnabled, cubeValue, cubeOwner, awaitingOpeningRoll,
       }));
     } catch (e) { /* ignore (private browsing, quota, etc.) */ }
   }
@@ -501,18 +502,33 @@
     // (and the enabled/disabled choice itself) carries across games.
     cubeValue = 1;
     cubeOwner = null;
-
-    let dWhite, dBlack;
-    do {
-      dWhite = 1 + Math.floor(Math.random() * 6);
-      dBlack = 1 + Math.floor(Math.random() * 6);
-    } while (dWhite === dBlack);
-    const starter = dWhite > dBlack ? 'white' : 'black';
-    log(`Åbningsslag: Hvid slog ${dWhite}, Sort slog ${dBlack}. ${PLAYER_LABEL[starter]} starter.`, 'info');
-    state = R.startTurn(state, starter, [dWhite, dBlack]);
+    // The opening roll (deciding who starts) waits for the cup to be pressed rather
+    // than happening automatically, same as every other roll in the game.
+    awaitingOpeningRoll = true;
+    log('Tryk på bægeret for at slå åbningsslaget og se hvem der starter.', 'info');
 
     renderAll();
-    afterDiceRolled();
+  }
+
+  /** The opening roll: each side gets a die, whoever rolls higher starts and plays
+   * both dice as their first move - same underlying rule as every other turn, just
+   * without a "current player" yet, so it's triggered once by whoever presses the
+   * cup rather than being tied to a specific side's turn. */
+  function doOpeningRoll() {
+    btnRoll.disabled = true;
+    animateDiceRoll(state.turn, () => {
+      let dWhite, dBlack;
+      do {
+        dWhite = 1 + Math.floor(Math.random() * 6);
+        dBlack = 1 + Math.floor(Math.random() * 6);
+      } while (dWhite === dBlack);
+      const starter = dWhite > dBlack ? 'white' : 'black';
+      awaitingOpeningRoll = false;
+      log(`Åbningsslag: Hvid slog ${dWhite}, Sort slog ${dBlack}. ${PLAYER_LABEL[starter]} starter.`, 'info');
+      state = R.startTurn(state, starter, [dWhite, dBlack]);
+      afterDiceRolled();
+      settleDiceFaces();
+    });
   }
 
   function opponentOf(p) { return R.opponent(p); }
@@ -614,6 +630,7 @@
   }
 
   btnRoll.addEventListener('click', () => {
+    if (awaitingOpeningRoll) { doOpeningRoll(); return; }
     if (!isHumanTurn()) return;
     btnRoll.disabled = true;
     const player = state.turn;
@@ -644,7 +661,7 @@
 
   function updateUndoEndButtons() {
     btnUndo.disabled = undoStack.length === 0;
-    if (!isHumanTurn()) {
+    if (awaitingOpeningRoll || !isHumanTurn()) {
       btnEndTurn.disabled = true;
       return;
     }
@@ -866,8 +883,17 @@
       onCellClick,
     });
 
-    turnText.textContent = `${PLAYER_LABEL[state.turn]}${mode === 'pvc' && state.turn !== humanPlayer ? ' (computer)' : ''}`;
-    turnText.className = state.turn === 'white' ? 'white-turn' : 'black-turn';
+    if (awaitingOpeningRoll) {
+      turnText.textContent = 'Åbningsslag';
+      turnText.className = '';
+      btnRoll.title = 'Slå åbningsslag';
+      btnRoll.setAttribute('aria-label', 'Slå åbningsslag');
+    } else {
+      turnText.textContent = `${PLAYER_LABEL[state.turn]}${mode === 'pvc' && state.turn !== humanPlayer ? ' (computer)' : ''}`;
+      turnText.className = state.turn === 'white' ? 'white-turn' : 'black-turn';
+      btnRoll.title = 'Slå terninger';
+      btnRoll.setAttribute('aria-label', 'Slå terninger');
+    }
     btnRoll.classList.remove('turn-white', 'turn-black');
     btnRoll.classList.add(state.turn === 'white' ? 'turn-white' : 'turn-black');
 
@@ -900,7 +926,9 @@
     // originalRoll) — using state.dice.length here would re-enable the button the
     // instant the last die is played, letting the same player roll again before
     // clicking "Afslut tur".
-    btnRoll.disabled = state.originalRoll.length > 0 || !isHumanTurn() || !!state.winner;
+    btnRoll.disabled = awaitingOpeningRoll
+      ? false
+      : (state.originalRoll.length > 0 || !isHumanTurn() || !!state.winner);
     scoreWhite.textContent = scoreboard.white;
     scoreBlack.textContent = scoreboard.black;
     pipWhite.textContent = R.pipCount(state, 'white');
@@ -912,7 +940,7 @@
       cubeDisplay.classList.toggle('centered', cubeOwner === null);
       // A double can only be offered before rolling, on your own turn, and only by
       // whoever currently owns the cube (or by either player while it's centered).
-      const canOfferDouble = !state.winner && isHumanTurn() && state.originalRoll.length === 0
+      const canOfferDouble = !awaitingOpeningRoll && !state.winner && isHumanTurn() && state.originalRoll.length === 0
         && (cubeOwner === null || cubeOwner === state.turn);
       btnDouble.disabled = !canOfferDouble;
     }
@@ -933,6 +961,7 @@
     cubeEnabled = !!saved.cubeEnabled;
     cubeValue = saved.cubeValue || 1;
     cubeOwner = saved.cubeOwner || null;
+    awaitingOpeningRoll = !!saved.awaitingOpeningRoll;
     selectedSource = null;
     undoStack = [];
     messageLog.innerHTML = '';
@@ -940,7 +969,11 @@
     startScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
 
-    if (isHumanTurn()) {
+    if (awaitingOpeningRoll) {
+      // Nothing to continue automatically here - just wait for the cup again.
+      updateUndoEndButtons();
+      renderAll();
+    } else if (isHumanTurn()) {
       if (state.dice.length === 0) {
         awaitingHumanInput = false;
       } else {
